@@ -1,5 +1,5 @@
 // @ts-check
 
-import half from './src/half';
+import pageLoader from './src/pageLoader';
 
-export default half;
+export default pageLoader;

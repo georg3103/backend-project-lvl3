@@ -1,5 +1,5 @@
 #!/usr/bin/env node
 
-import half from '../index';
+import pageLoader from '../index';
 
-console.log(half(Number(process.argv[process.argv.length - 1])));
+console.log(pageLoader(Number(process.argv[process.argv.length - 1])));
