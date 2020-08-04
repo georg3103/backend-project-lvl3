@@ -61,6 +61,7 @@ describe('pageLoader functionality', () => {
     const fileName = 'test-com.html';
     const dest = path.join(pathTotempDir, fileName);
     const loadedHtml = await fsPromises.readFile(dest, { encoding: 'utf8' });
+    console.log(await fsPromises.readdir(pathTotempDir));
     expect(loadedHtml).toEqual(html);
   });
 });
