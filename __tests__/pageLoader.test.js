@@ -17,6 +17,7 @@ const htmlPath = '/';
 const stylePath = '/style.css';
 const imagePath = '/image.png';
 const folderImagePath = '/folder/image.png';
+const folderAnotherImagePath = '/folder/image1.png';
 const scriptPath = '/script.txt';
 
 let html;
@@ -44,6 +45,8 @@ describe('pageLoader functionality', () => {
       .get(imagePath)
       .reply(200, image)
       .get(folderImagePath)
+      .reply(200, folderImage)
+      .get(folderAnotherImagePath)
       .reply(200, folderImage)
       .get(scriptPath)
       .reply(200, script);

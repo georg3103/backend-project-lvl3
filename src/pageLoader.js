@@ -1,4 +1,5 @@
 import { promises as fsPromises } from 'fs';
+import path from 'path';
 import url from 'url';
 import axios from 'axios';
 import cheerio from 'cheerio';
@@ -28,8 +29,11 @@ const getUrls = (html) => {
   return Object.keys(tags)
     .map((key) => {
       const { selector, attr } = tags[key];
-      return $(selector).attr()[attr];
-    });
+      return $(selector)
+        .map((_, el) => $(el).attr(attr))
+        .get();
+    })
+    .flat();
 };
 
 /**
@@ -59,9 +63,26 @@ export default (link, options) => {
     .then((resRequests) => Promise.all(
       resRequests.map((resRequest) => resRequest
         .then(({ data: fileData, config: { url: fileUrl } }) => {
-          const fileDir = makeFileDir(fileUrl, options);
-          console.log('fileDir', fileDir);
-          return fsPromises.writeFile(fileDir, fileData);
+          const pathTofile = makeFileDir(fileUrl, options);
+          const pathTofileFolder = path.dirname(pathTofile);
+          return fsPromises.opendir(pathTofileFolder)
+            .then(() => {
+              console.log(`${pathTofileFolder}: folder exists`);
+              return fsPromises.readFile(pathTofile)
+                .then(() => {
+                  console.log(`${pathTofile}: file exists`);
+                })
+                .catch(() => fsPromises.writeFile(pathTofile, fileData));
+            })
+            .catch(() => {
+              console.log(`${pathTofileFolder}: folders created`);
+              return fsPromises.mkdir(pathTofileFolder, { recursive: true })
+                .then(() => fsPromises.readFile(pathTofile)
+                  .then(() => {
+                    console.log(`${pathTofile}: file exists`);
+                  })
+                  .catch(() => fsPromises.writeFile(pathTofile, fileData)));
+            });
         })),
     ));
 };
