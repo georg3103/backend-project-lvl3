@@ -25,6 +25,8 @@ let style;
 let image;
 let folderImage;
 let script;
+let pathTotempDir;
+let options;
 
 beforeAll(async () => {
   console.log('beforeAll');
@@ -33,6 +35,14 @@ beforeAll(async () => {
   image = await fsPromises.readFile(pathToImage, { encoding: 'utf8' });
   folderImage = await fsPromises.readFile(pathToFolderImage, { encoding: 'utf8' });
   script = await fsPromises.readFile(pathToScript, { encoding: 'utf8' });
+
+  pathTotempDir = await fsPromises.mkdtemp(
+    path.resolve(os.tmpdir(), 'page-loader-'),
+  );
+
+  options = {
+    output: pathTotempDir,
+  };
 });
 
 describe('pageLoader functionality', () => {
@@ -51,20 +61,43 @@ describe('pageLoader functionality', () => {
       .get(scriptPath)
       .reply(200, script);
 
-    const pathTotempDir = await fsPromises.mkdtemp(
-      path.resolve(os.tmpdir(), 'page-loader-'),
-    );
-
-    const options = {
-      output: pathTotempDir,
-    };
-
     await pageLoader(link, options);
-
     const fileName = 'test-com.html';
     const dest = path.join(pathTotempDir, fileName);
     const loadedHtml = await fsPromises.readFile(dest, { encoding: 'utf8' });
-    console.log(await fsPromises.readdir(pathTotempDir));
-    expect(loadedHtml).toEqual(html);
+    expect(loadedHtml).toBe(html);
+  });
+
+  test('nested resources have been downloaded', async () => {
+    nock(link)
+      .get(htmlPath)
+      .reply(200, html)
+      .get(stylePath)
+      .reply(200, style)
+      .get(imagePath)
+      .reply(200, image)
+      .get(folderImagePath)
+      .reply(200, folderImage)
+      .get(folderAnotherImagePath)
+      .reply(200, folderImage)
+      .get(scriptPath)
+      .reply(200, script);
+
+    const destStyle = path.join(pathTotempDir, stylePath);
+    const destImage = path.join(pathTotempDir, imagePath);
+    const destFolderImage = path.join(pathTotempDir, folderImagePath);
+    const destScript = path.join(pathTotempDir, scriptPath);
+
+    await pageLoader(link, options);
+
+    const loadedStyle = await fsPromises.readFile(destStyle, { encoding: 'utf8' });
+    const loadedImage = await fsPromises.readFile(destImage, { encoding: 'utf8' });
+    const loadedFolerImage = await fsPromises.readFile(destFolderImage, { encoding: 'utf8' });
+    const loadedScript = await fsPromises.readFile(destScript, { encoding: 'utf8' });
+
+    expect(loadedStyle).toBe(style);
+    expect(loadedImage).toBe(image);
+    expect(loadedFolerImage).toBe(folderImage);
+    expect(loadedScript).toBe(script);
   });
 });
