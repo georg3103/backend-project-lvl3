@@ -67,7 +67,7 @@ const getUrls = (html) => {
  */
 export default (link, options) => {
   const { protocol, hostname } = url.parse(link);
-  const pathToHtml = makePathToHtml(link, options);
+  const pathToHtml = makePathToHtml(link, options.output);
   const pathToFilesFolder = makePathToFilesFolder(link, options.output);
 
   let html;

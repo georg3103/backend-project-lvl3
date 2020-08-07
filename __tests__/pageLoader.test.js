@@ -51,7 +51,7 @@ beforeAll(async () => {
 });
 
 describe('pageLoader functionality', () => {
-  test('html is loaded', async () => {
+  test('html has been loaded', async () => {
     nock(link)
       .get(htmlPath)
       .reply(200, html)

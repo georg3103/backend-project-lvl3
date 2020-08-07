@@ -3,10 +3,10 @@ import path from 'path';
 
 /**
  * @param {String} link
- * @param {Object} options
+ * @param {Srring} options
  * @returns {String} path to main html file
  */
-export function makePathToHtml(link, { output }) {
+export function makePathToHtml(link, output) {
   const { hostname } = url.parse(link);
   const fileName = hostname
     .replace(/\W+/g, '-')
@@ -46,10 +46,10 @@ export function makePathToFile(link, output) {
 
 /**
  * @param {String} link
- * @param {String} pathToFolder
+ * @param {String} output
  * @returns {String} path to file
  */
-export function changePath(link, pathToFolder) {
+export function changePath(link, output) {
   const { pathname } = url.parse(link);
   const { dir, base } = path.parse(pathname);
   const dirPath = dir.slice(1);
@@ -58,5 +58,5 @@ export function changePath(link, pathToFolder) {
       .replace(/\W+/g, '-')
       .concat(`-${base}`)
     : base;
-  return path.join(pathToFolder, fileName);
+  return path.join(output, fileName);
 }
