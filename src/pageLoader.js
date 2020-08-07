@@ -1,9 +1,13 @@
 import { promises as fsPromises } from 'fs';
-import path from 'path';
 import url from 'url';
 import axios from 'axios';
 import cheerio from 'cheerio';
-import { makeDir, makeFileDir } from './utils';
+import {
+  makePathToHtml,
+  makePathToFile,
+  makePathToFilesFolder,
+  changePath,
+} from './utils';
 
 const tags = {
   link: {
@@ -18,6 +22,27 @@ const tags = {
     selector: 'script[src]',
     attr: 'src',
   },
+};
+
+/**
+ * @param {String} link
+ * @param {Object} options
+ * @returns {String} html code
+ */
+const changeHtml = (html, dest) => {
+  const $ = cheerio.load(html);
+  Object.keys(tags)
+    .forEach((key) => {
+      const { selector } = tags[key];
+      $(selector).map((_, el) => {
+        const { attr } = tags[key];
+        const pathToFile = $(el).attr(attr);
+        const newPathToFile = changePath(pathToFile, dest);
+        return $(el).attr(attr, newPathToFile);
+      });
+    });
+
+  return $.html();
 };
 
 /**
@@ -42,47 +67,41 @@ const getUrls = (html) => {
  */
 export default (link, options) => {
   const { protocol, hostname } = url.parse(link);
-  const fileName = makeDir(link, options);
-  let mainHtml;
+  const pathToHtml = makePathToHtml(link, options);
+  const pathToFilesFolder = makePathToFilesFolder(link, options.output);
+
+  let html;
+  let resRequests;
 
   return axios
     .get(link)
-    .then(({ data: html }) => {
-      mainHtml = html;
+    .then(({ data }) => {
+      html = data;
     })
-    .then(() => fsPromises.writeFile(fileName, mainHtml))
-    .then(console.log(`created main html: ${fileName}`))
-    .then(() => getUrls(mainHtml, link))
-    .then((urls) => urls
-      .map((pathname) => {
-        const resourceLink = url.format({ protocol, hostname, pathname });
-        console.log('resourceLink', resourceLink);
-        return axios
-          .get(resourceLink);
-      }))
-    .then((resRequests) => Promise.all(
+    .then(() => {
+      const pathToFolder = makePathToFilesFolder(link);
+      const newHtml = changeHtml(html, pathToFolder);
+      return fsPromises.writeFile(pathToHtml, newHtml);
+    })
+    .then(console.log(`created main html: ${pathToHtml}`))
+    .then(() => getUrls(html, link))
+    .then((urls) => {
+      resRequests = urls
+        .map((pathname) => {
+          const resourceLink = url.format({ protocol, hostname, pathname });
+          return axios
+            .get(resourceLink);
+        });
+    })
+    .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
+    .then(() => Promise.all(
       resRequests.map((resRequest) => resRequest
         .then(({ data: fileData, config: { url: fileUrl } }) => {
-          const pathTofile = makeFileDir(fileUrl, options);
-          const pathTofileFolder = path.dirname(pathTofile);
-          return fsPromises.opendir(pathTofileFolder)
-            .then(() => {
-              console.log(`${pathTofileFolder}: folder exists`);
-              return fsPromises.readFile(pathTofile)
-                .then(() => {
-                  console.log(`${pathTofile}: file exists`);
-                })
-                .catch(() => fsPromises.writeFile(pathTofile, fileData));
-            })
-            .catch(() => {
-              console.log(`${pathTofileFolder}: folders created`);
-              return fsPromises.mkdir(pathTofileFolder, { recursive: true })
-                .then(() => fsPromises.readFile(pathTofile)
-                  .then(() => {
-                    console.log(`${pathTofile}: file exists`);
-                  })
-                  .catch(() => fsPromises.writeFile(pathTofile, fileData)));
-            });
+          const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);
+          return fsPromises.readFile(pathTofile)
+            .then(() => console.log(`${pathTofile}: file exists`))
+            .catch(() => fsPromises.writeFile(pathTofile, fileData)
+              .then(() => console.log(`${pathTofile}: file created`)));
         })),
     ));
 };

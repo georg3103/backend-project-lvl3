@@ -13,6 +13,8 @@ const pathToImage = '__tests__/__fixtures__/before/image.png';
 const pathToFolderImage = '__tests__/__fixtures__/before/folder/image.png';
 const pathToScript = '__tests__/__fixtures__/before/script.txt';
 
+const pathToChangedHtml = '__tests__/__fixtures__/after/index.html';
+
 const htmlPath = '/';
 const stylePath = '/style.css';
 const imagePath = '/image.png';
@@ -28,13 +30,16 @@ let script;
 let pathTotempDir;
 let options;
 
+let changedHtml;
+
 beforeAll(async () => {
-  console.log('beforeAll');
   html = await fsPromises.readFile(pathToHtml, { encoding: 'utf8' });
   style = await fsPromises.readFile(pathToStyle, { encoding: 'utf8' });
   image = await fsPromises.readFile(pathToImage, { encoding: 'utf8' });
   folderImage = await fsPromises.readFile(pathToFolderImage, { encoding: 'utf8' });
   script = await fsPromises.readFile(pathToScript, { encoding: 'utf8' });
+
+  changedHtml = await fsPromises.readFile(pathToChangedHtml, { encoding: 'utf8' });
 
   pathTotempDir = await fsPromises.mkdtemp(
     path.resolve(os.tmpdir(), 'page-loader-'),
@@ -61,11 +66,13 @@ describe('pageLoader functionality', () => {
       .get(scriptPath)
       .reply(200, script);
 
+    const pathToLoadedHtml = `${pathTotempDir}/test-com.html`;
+
     await pageLoader(link, options);
-    const fileName = 'test-com.html';
-    const dest = path.join(pathTotempDir, fileName);
-    const loadedHtml = await fsPromises.readFile(dest, { encoding: 'utf8' });
-    expect(loadedHtml).toBe(html);
+
+    const loadedHtml = await fsPromises.readFile(pathToLoadedHtml, { encoding: 'utf8' });
+
+    expect(loadedHtml).toBe(changedHtml);
   });
 
   test('nested resources have been downloaded', async () => {
@@ -83,17 +90,17 @@ describe('pageLoader functionality', () => {
       .get(scriptPath)
       .reply(200, script);
 
-    const destStyle = path.join(pathTotempDir, stylePath);
-    const destImage = path.join(pathTotempDir, imagePath);
-    const destFolderImage = path.join(pathTotempDir, folderImagePath);
-    const destScript = path.join(pathTotempDir, scriptPath);
+    const pathToLoadedStyle = `${pathTotempDir}/test-com_files/style.css`;
+    const pathToLoadedImage = `${pathTotempDir}/test-com_files/image.png`;
+    const pathToFolderLoadedImage = `${pathTotempDir}/test-com_files/folder-image.png`;
+    const pathToLoadedScript = `${pathTotempDir}/test-com_files/script.txt`;
 
     await pageLoader(link, options);
 
-    const loadedStyle = await fsPromises.readFile(destStyle, { encoding: 'utf8' });
-    const loadedImage = await fsPromises.readFile(destImage, { encoding: 'utf8' });
-    const loadedFolerImage = await fsPromises.readFile(destFolderImage, { encoding: 'utf8' });
-    const loadedScript = await fsPromises.readFile(destScript, { encoding: 'utf8' });
+    const loadedStyle = await fsPromises.readFile(pathToLoadedStyle, { encoding: 'utf8' });
+    const loadedImage = await fsPromises.readFile(pathToLoadedImage, { encoding: 'utf8' });
+    const loadedFolerImage = await fsPromises.readFile(pathToFolderLoadedImage, { encoding: 'utf8' });
+    const loadedScript = await fsPromises.readFile(pathToLoadedScript, { encoding: 'utf8' });
 
     expect(loadedStyle).toBe(style);
     expect(loadedImage).toBe(image);
