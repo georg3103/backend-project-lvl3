@@ -13,6 +13,15 @@ install-deps:
 test:
 	npm test
 
+test-debug:
+	DEBUG=page-loader npm test
+
+test-axios-debug:
+	DEBUG=axios,page-loader npm test
+
+test-nock-debug:
+	DEBUG=nock.scope.* npm test
+
 test-coverage:
 	npm test -- --coverage --coverageProvider=v8
 

@@ -2,12 +2,18 @@ import { promises as fsPromises } from 'fs';
 import url from 'url';
 import axios from 'axios';
 import cheerio from 'cheerio';
+import debug from 'debug';
+
 import {
   makePathToHtml,
   makePathToFile,
   makePathToFilesFolder,
   changePath,
 } from './utils';
+
+require('axios-debug-log');
+
+const log = debug('page-loader');
 
 const tags = {
   link: {
@@ -83,7 +89,7 @@ export default (link, options) => {
       const newHtml = changeHtml(html, pathToFolder);
       return fsPromises.writeFile(pathToHtml, newHtml);
     })
-    .then(console.log(`created main html: ${pathToHtml}`))
+    .then(log(`created main html: ${pathToHtml}`))
     .then(() => getUrls(html, link))
     .then((urls) => {
       resRequests = urls
@@ -99,9 +105,9 @@ export default (link, options) => {
         .then(({ data: fileData, config: { url: fileUrl } }) => {
           const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);
           return fsPromises.readFile(pathTofile)
-            .then(() => console.log(`${pathTofile}: file exists`))
+            .then(() => log(`${pathTofile}: file exists`))
             .catch(() => fsPromises.writeFile(pathTofile, fileData)
-              .then(() => console.log(`${pathTofile}: file created`)));
+              .then(() => log(`${pathTofile}: file created`)));
         })),
     ));
 };
