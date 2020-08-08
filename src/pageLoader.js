@@ -72,9 +72,16 @@ const getUrls = (html) => {
  * @param {Object} options
  */
 export default (link, options) => {
+  const { output } = options;
+
   const { protocol, hostname } = url.parse(link);
-  const pathToHtml = makePathToHtml(link, options.output);
-  const pathToFilesFolder = makePathToFilesFolder(link, options.output);
+
+  if (!protocol || !hostname) {
+    throw new Error(`incorrent url ${link}`);
+  }
+
+  const pathToHtml = makePathToHtml(link, output);
+  const pathToFilesFolder = makePathToFilesFolder(link, output);
 
   let html;
   let resRequests;

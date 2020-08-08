@@ -48,6 +48,8 @@ beforeAll(async () => {
   options = {
     output: pathTotempDir,
   };
+
+  nock.disableNetConnect();
 });
 
 describe('pageLoader functionality', () => {
@@ -106,5 +108,29 @@ describe('pageLoader functionality', () => {
     expect(loadedImage).toBe(image);
     expect(loadedFolerImage).toBe(folderImage);
     expect(loadedScript).toBe(script);
+  });
+});
+
+describe('pageLoader error handling', () => {
+  test('passed wrong output', async () => {
+    nock(link).get(htmlPath).reply(200, html);
+
+    await expect(pageLoader(link, { output: '/wrong/dir' })).rejects.toThrowErrorMatchingSnapshot();
+  });
+
+  test('passed not valid link', async () => {
+    const notValidLink = 'test.com';
+
+    await expect(() => {
+      pageLoader(notValidLink, options);
+    }).toThrowError('incorrent url test.com');
+  });
+
+  test('passed link to non-existent site', async () => {
+    nock(link).get(htmlPath).replyWithError({ code: 'ENOTFOUND' });
+
+    const notValidLink = 'http://qwertyui12345.com/';
+
+    await expect(pageLoader(notValidLink, options)).rejects.toThrowErrorMatchingSnapshot();
   });
 });
