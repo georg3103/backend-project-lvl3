@@ -3,7 +3,7 @@ import path from 'path';
 
 /**
  * @param {String} link
- * @param {Srring} options
+ * @param {Srring} output
  * @returns {String} path to main html file
  */
 export function makePathToHtml(link, output) {
@@ -16,7 +16,7 @@ export function makePathToHtml(link, output) {
 
 /**
  * @param {String} link
- * @param {Object} options
+ * @param {String} output
  * @returns {String} path to files folder
  */
 export function makePathToFilesFolder(link, output = '') {

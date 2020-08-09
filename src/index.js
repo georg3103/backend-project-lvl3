@@ -33,7 +33,7 @@ const tags = {
 
 /**
  * @param {String} link
- * @param {Object} options
+ * @param {String} dest
  * @returns {String} html code
  */
 const changeHtml = (html, dest) => {
@@ -85,7 +85,7 @@ export default (link, options) => {
   const pathToFilesFolder = makePathToFilesFolder(link, output);
 
   let html;
-  let resRequests = [];
+  let loadedFiles = [];
 
   return axios
     .get(link)
@@ -111,7 +111,7 @@ export default (link, options) => {
               .get(resourceLink)
               .then(({ data: fileData, config: { url: fileUrl } }) => {
                 const loadedResource = { fileData, fileUrl };
-                resRequests = resRequests.concat(loadedResource);
+                loadedFiles = loadedFiles.concat(loadedResource);
                 log('loaded', resourceLink);
               });
           },
@@ -121,7 +121,7 @@ export default (link, options) => {
     })
     .then(() => {
       const fileTasks = new Listr(
-        resRequests.map(({ fileData, fileUrl }) => ({
+        loadedFiles.map(({ fileData, fileUrl }) => ({
           title: fileUrl,
           task: () => {
             const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);

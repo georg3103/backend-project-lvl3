@@ -3,7 +3,7 @@ import { promises as fsPromises } from 'fs';
 import os from 'os';
 import path from 'path';
 import nock from 'nock';
-import pageLoader from '../index';
+import downloadPage from '../index';
 
 const link = 'https://test.com';
 
@@ -70,7 +70,7 @@ describe('pageLoader functionality', () => {
 
     const pathToLoadedHtml = `${pathTotempDir}/test-com.html`;
 
-    await pageLoader(link, options);
+    await downloadPage(link, options);
 
     const loadedHtml = await fsPromises.readFile(pathToLoadedHtml, { encoding: 'utf8' });
 
@@ -97,7 +97,7 @@ describe('pageLoader functionality', () => {
     const pathToFolderLoadedImage = `${pathTotempDir}/test-com_files/folder-image.png`;
     const pathToLoadedScript = `${pathTotempDir}/test-com_files/script.txt`;
 
-    await pageLoader(link, options);
+    await downloadPage(link, options);
 
     const loadedStyle = await fsPromises.readFile(pathToLoadedStyle, { encoding: 'utf8' });
     const loadedImage = await fsPromises.readFile(pathToLoadedImage, { encoding: 'utf8' });
@@ -115,14 +115,14 @@ describe('pageLoader error handling', () => {
   test('passed wrong output', async () => {
     nock(link).get(htmlPath).reply(200, html);
 
-    await expect(pageLoader(link, { output: '/wrong/dir' })).rejects.toThrowErrorMatchingSnapshot();
+    await expect(downloadPage(link, { output: '/wrong/dir' })).rejects.toThrowErrorMatchingSnapshot();
   });
 
   test('passed not valid link', async () => {
     const notValidLink = 'test.com';
 
     await expect(() => {
-      pageLoader(notValidLink, options);
+      downloadPage(notValidLink, options);
     }).toThrowError('incorrent url test.com');
   });
 
@@ -131,6 +131,6 @@ describe('pageLoader error handling', () => {
 
     const notValidLink = 'http://qwertyui12345.com/';
 
-    await expect(pageLoader(notValidLink, options)).rejects.toThrowErrorMatchingSnapshot();
+    await expect(downloadPage(notValidLink, options)).rejects.toThrowErrorMatchingSnapshot();
   });
 });
