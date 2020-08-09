@@ -3,6 +3,7 @@ import url from 'url';
 import axios from 'axios';
 import cheerio from 'cheerio';
 import debug from 'debug';
+import Listr from 'listr';
 
 import {
   makePathToHtml,
@@ -84,7 +85,7 @@ export default (link, options) => {
   const pathToFilesFolder = makePathToFilesFolder(link, output);
 
   let html;
-  let resRequests;
+  let resRequests = [];
 
   return axios
     .get(link)
@@ -96,25 +97,41 @@ export default (link, options) => {
       const newHtml = changeHtml(html, pathToFolder);
       return fsPromises.writeFile(pathToHtml, newHtml);
     })
-    .then(log(`created main html: ${pathToHtml}`))
-    .then(() => getUrls(html, link))
-    .then((urls) => {
-      resRequests = urls
-        .map((pathname) => {
-          const resourceLink = url.format({ protocol, hostname, pathname });
-          return axios
-            .get(resourceLink);
-        });
-    })
+    .then(log('created main html', pathToHtml))
     .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
-    .then(() => Promise.all(
-      resRequests.map((resRequest) => resRequest
-        .then(({ data: fileData, config: { url: fileUrl } }) => {
-          const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);
-          return fsPromises.readFile(pathTofile)
-            .then(() => log(`${pathTofile}: file exists`))
-            .catch(() => fsPromises.writeFile(pathTofile, fileData)
-              .then(() => log(`${pathTofile}: file created`)));
+    .then(log('created folder for files', pathToFilesFolder))
+    .then(() => {
+      const urls = getUrls(html, link);
+      const fileLoadTasks = new Listr(
+        urls.map((pathname) => ({
+          title: pathname,
+          task: () => {
+            const resourceLink = url.format({ protocol, hostname, pathname });
+            return axios
+              .get(resourceLink)
+              .then(({ data: fileData, config: { url: fileUrl } }) => {
+                const loadedResource = { fileData, fileUrl };
+                resRequests = resRequests.concat(loadedResource);
+                log('loaded', resourceLink);
+              });
+          },
         })),
-    ));
+      );
+      return fileLoadTasks.run();
+    })
+    .then(() => {
+      const fileTasks = new Listr(
+        resRequests.map(({ fileData, fileUrl }) => ({
+          title: fileUrl,
+          task: () => {
+            const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);
+            return fsPromises.readFile(pathTofile)
+              .then(() => log(pathTofile, 'file exists'))
+              .catch(() => fsPromises.writeFile(pathTofile, fileData)
+                .then(() => log(pathTofile, 'file created')));
+          },
+        })),
+      );
+      return fileTasks.run();
+    });
 };
