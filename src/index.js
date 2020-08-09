@@ -1,5 +1,6 @@
 import { promises as fsPromises } from 'fs';
 import url from 'url';
+import path from 'path';
 import axios from 'axios';
 import cheerio from 'cheerio';
 import debug from 'debug';
@@ -75,7 +76,7 @@ const getUrls = (html) => {
 export default (link, options) => {
   const { output } = options;
 
-  const { protocol, hostname } = url.parse(link);
+  const { protocol, hostname, pathname: linkPathname } = url.parse(link);
 
   if (!protocol || !hostname) {
     throw new Error(`incorrent url ${link}`);
@@ -104,9 +105,12 @@ export default (link, options) => {
       const urls = getUrls(html, link);
       const fileLoadTasks = new Listr(
         urls.map((pathname) => ({
-          title: pathname,
+          title: `load ${pathname}`,
           task: () => {
-            const resourceLink = url.format({ protocol, hostname, pathname });
+            const resPathname = path.normalize(path.join(linkPathname, pathname));
+            const resourceLink = url.format({
+              protocol, hostname, pathname: resPathname,
+            });
             return axios
               .get(resourceLink)
               .then(({ data: fileData, config: { url: fileUrl } }) => {
@@ -122,7 +126,7 @@ export default (link, options) => {
     .then(() => {
       const fileTasks = new Listr(
         loadedFiles.map(({ fileData, fileUrl }) => ({
-          title: fileUrl,
+          title: `write ${fileUrl}`,
           task: () => {
             const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);
             return fsPromises.readFile(pathTofile)

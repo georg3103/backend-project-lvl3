@@ -1,7 +1,7 @@
 install: install-deps
 
 run:
-	npx babel-node -- 'bin/nodejs-package.js' 10
+	npx babel-node -- 'bin/page-loader' 10
 
 build:
 	rm -rf dist

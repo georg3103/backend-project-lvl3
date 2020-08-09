@@ -52,9 +52,8 @@ export function makePathToFile(link, output) {
 export function changePath(link, output) {
   const { pathname } = url.parse(link);
   const { dir, base } = path.parse(pathname);
-  const dirPath = dir.slice(1);
-  const fileName = dirPath.length
-    ? dirPath
+  const fileName = dir.slice(1).length
+    ? dir
       .replace(/\W+/g, '-')
       .concat(`-${base}`)
     : base;

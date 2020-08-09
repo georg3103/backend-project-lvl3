@@ -28,7 +28,7 @@ describe('utils', () => {
 
   test('changePath', async () => {
     const pathToTestFilesFolder = 'test-com_files';
-    const fileUrl = '/folder/image.png';
+    const fileUrl = 'folder/image.png';
     const changedPath = 'test-com_files/folder-image.png';
     expect(changePath(fileUrl, pathToTestFilesFolder)).toBe(changedPath);
   });
