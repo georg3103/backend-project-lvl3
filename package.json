@@ -1,5 +1,5 @@
 {
-  "name": "page-loader-gnmkrtchyan",
+  "name": "@georg3103/page-loader-gnmkrtchyan",
   "version": "0.0.1",
   "description": "page-loader",
   "scripts": {
@@ -8,7 +8,7 @@
     "test": "jest"
   },
   "bin": {
-    "hexlet": "bin/nodejs-package.js"
+    "pageLoader": "bin/page-loader.js"
   },
   "files": [
     "dist"
@@ -28,6 +28,9 @@
   "type": "module",
   "jest": {
     "testEnvironment": "node"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com/"
   },
   "homepage": "https://github.com/georg3103/backend-project-lvl3#readme",
   "dependencies": {
