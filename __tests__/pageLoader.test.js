@@ -28,7 +28,7 @@ let image;
 let folderImage;
 let script;
 let pathTotempDir;
-let options;
+let output;
 
 let changedHtml;
 
@@ -45,9 +45,7 @@ beforeAll(async () => {
     path.resolve(os.tmpdir(), 'page-loader-'),
   );
 
-  options = {
-    output: pathTotempDir,
-  };
+  output = pathTotempDir;
 
   nock.disableNetConnect();
 });
@@ -70,7 +68,7 @@ describe('pageLoader functionality', () => {
 
     const pathToLoadedHtml = `${pathTotempDir}/test-com.html`;
 
-    await downloadPage(link, options);
+    await downloadPage(link, output);
 
     const loadedHtml = await fsPromises.readFile(pathToLoadedHtml, { encoding: 'utf8' });
 
@@ -97,7 +95,7 @@ describe('pageLoader functionality', () => {
     const pathToFolderLoadedImage = `${pathTotempDir}/test-com_files/folder-image.png`;
     const pathToLoadedScript = `${pathTotempDir}/test-com_files/script.txt`;
 
-    await downloadPage(link, options);
+    await downloadPage(link, output);
 
     const loadedStyle = await fsPromises.readFile(pathToLoadedStyle, { encoding: 'utf8' });
     const loadedImage = await fsPromises.readFile(pathToLoadedImage, { encoding: 'utf8' });
@@ -130,7 +128,7 @@ describe('pageLoader functionality', () => {
     const pathToFolderLoadedImage = `${pathTotempDir}/test-com_files/folder-image.png`;
     const pathToLoadedScript = `${pathTotempDir}/test-com_files/script.txt`;
 
-    await downloadPage(`${link}/tests/`, options);
+    await downloadPage(`${link}/tests/`, output);
 
     const loadedStyle = await fsPromises.readFile(pathToLoadedStyle, { encoding: 'utf8' });
     const loadedImage = await fsPromises.readFile(pathToLoadedImage, { encoding: 'utf8' });
@@ -148,14 +146,14 @@ describe('pageLoader error handling', () => {
   test('passed wrong output', async () => {
     nock(link).get(htmlPath).reply(200, html);
 
-    await expect(downloadPage(link, { output: '/wrong/dir' })).rejects.toThrowErrorMatchingSnapshot();
+    await expect(downloadPage(link, '/wrong/dir')).rejects.toThrowErrorMatchingSnapshot();
   });
 
   test('passed not valid link', async () => {
     const notValidLink = 'test.com';
 
     await expect(() => {
-      downloadPage(notValidLink, options);
+      downloadPage(notValidLink, output);
     }).toThrowError('incorrent url test.com');
   });
 
@@ -164,6 +162,6 @@ describe('pageLoader error handling', () => {
 
     const notValidLink = 'http://qwertyui12345.com/';
 
-    await expect(downloadPage(notValidLink, options)).rejects.toThrowErrorMatchingSnapshot();
+    await expect(downloadPage(notValidLink, output)).rejects.toThrowErrorMatchingSnapshot();
   });
 });

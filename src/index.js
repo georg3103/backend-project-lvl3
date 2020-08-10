@@ -71,11 +71,9 @@ const getUrls = (html) => {
 
 /**
  * @param {String} link
- * @param {Object} options
+ * @param {String} output
  */
-export default (link, options) => {
-  const { output } = options;
-
+export default (link, output) => {
   const { protocol, hostname, pathname: linkPathname } = url.parse(link);
 
   if (!protocol || !hostname) {
