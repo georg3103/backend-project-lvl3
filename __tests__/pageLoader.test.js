@@ -109,6 +109,39 @@ describe('pageLoader functionality', () => {
     expect(loadedFolerImage).toBe(folderImage);
     expect(loadedScript).toBe(script);
   });
+
+  test('link with subpath nested resources have been downloaded', async () => {
+    nock(`${link}/tests/`)
+      .get(htmlPath)
+      .reply(200, html)
+      .get(stylePath)
+      .reply(200, style)
+      .get(imagePath)
+      .reply(200, image)
+      .get(folderImagePath)
+      .reply(200, folderImage)
+      .get(folderAnotherImagePath)
+      .reply(200, folderImage)
+      .get(scriptPath)
+      .reply(200, script);
+
+    const pathToLoadedStyle = `${pathTotempDir}/test-com_files/style.css`;
+    const pathToLoadedImage = `${pathTotempDir}/test-com_files/image.png`;
+    const pathToFolderLoadedImage = `${pathTotempDir}/test-com_files/folder-image.png`;
+    const pathToLoadedScript = `${pathTotempDir}/test-com_files/script.txt`;
+
+    await downloadPage(`${link}/tests/`, options);
+
+    const loadedStyle = await fsPromises.readFile(pathToLoadedStyle, { encoding: 'utf8' });
+    const loadedImage = await fsPromises.readFile(pathToLoadedImage, { encoding: 'utf8' });
+    const loadedFolerImage = await fsPromises.readFile(pathToFolderLoadedImage, { encoding: 'utf8' });
+    const loadedScript = await fsPromises.readFile(pathToLoadedScript, { encoding: 'utf8' });
+
+    expect(loadedStyle).toBe(style);
+    expect(loadedImage).toBe(image);
+    expect(loadedFolerImage).toBe(folderImage);
+    expect(loadedScript).toBe(script);
+  });
 });
 
 describe('pageLoader error handling', () => {
