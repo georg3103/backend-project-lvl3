@@ -2,7 +2,7 @@
 const commander = require('commander');
 const { version } = require('../package.json');
 
-const downloadPage = require('../index');
+const downloadPage = require('../index.js');
 
 commander
   .version(version)
