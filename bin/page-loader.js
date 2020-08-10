@@ -1,8 +1,8 @@
 #!/usr/bin/env node
-import commander from 'commander';
-import { version } from '../package.json';
+const commander = require('commander');
+const { version } = require('../package.json');
 
-import downloadPage from '..';
+const downloadPage = require('..');
 
 commander
   .version(version)
