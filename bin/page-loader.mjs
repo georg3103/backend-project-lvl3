@@ -2,7 +2,7 @@
 import commander from 'commander';
 import { version } from '../package.json';
 
-import downloadPage from '..';
+import downloadPage from '../index';
 
 commander
   .version(version)

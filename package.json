@@ -9,7 +9,7 @@
     "test": "jest"
   },
   "bin": {
-    "pageLoader": "bin/page-loader.js"
+    "pageLoader": "bin/page-loader.mjs"
   },
   "files": [
     "dist"
