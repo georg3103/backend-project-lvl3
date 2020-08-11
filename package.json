@@ -1,6 +1,6 @@
 {
   "name": "@georg3103/page-loader-gnmkrtchyan",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "page-loader",
   "main": "dist/index.js",
   "scripts": {
