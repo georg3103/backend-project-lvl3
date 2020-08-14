@@ -35,12 +35,14 @@ export function makePathToFilesFolder(link, output = '') {
 export function makePathToFile(link, output) {
   const { pathname } = url.parse(link);
   const { dir, base } = path.parse(pathname);
-  const dirPath = dir.slice(1);
-  const fileName = dirPath.length
-    ? dirPath
-      .replace(/\W+/g, '-')
-      .concat(`-${base}`)
-    : base;
+
+  if (dir === '/' || !dir.length) {
+    return path.join(output, base);
+  }
+
+  const fileName = dir
+    .replace(/\W+/g, '-')
+    .concat(`-${base}`);
   return path.join(output, fileName);
 }
 

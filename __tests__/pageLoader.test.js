@@ -1,4 +1,6 @@
-import { test, expect, describe } from '@jest/globals';
+import {
+  test, expect, describe, beforeEach,
+} from '@jest/globals';
 import { promises as fsPromises } from 'fs';
 import os from 'os';
 import path from 'path';
@@ -28,7 +30,6 @@ let image;
 let folderImage;
 let script;
 let pathTotempDir;
-let output;
 
 let changedHtml;
 
@@ -41,13 +42,13 @@ beforeAll(async () => {
 
   changedHtml = await fsPromises.readFile(pathToChangedHtml, { encoding: 'utf8' });
 
+  nock.disableNetConnect();
+});
+
+beforeEach(async () => {
   pathTotempDir = await fsPromises.mkdtemp(
     path.resolve(os.tmpdir(), 'page-loader-'),
   );
-
-  output = pathTotempDir;
-
-  nock.disableNetConnect();
 });
 
 describe('pageLoader functionality', () => {
@@ -68,44 +69,11 @@ describe('pageLoader functionality', () => {
 
     const pathToLoadedHtml = `${pathTotempDir}/test-com.html`;
 
-    await downloadPage(link, output);
+    await downloadPage(link, pathTotempDir);
 
     const loadedHtml = await fsPromises.readFile(pathToLoadedHtml, { encoding: 'utf8' });
 
     expect(loadedHtml).toBe(changedHtml);
-  });
-
-  test('nested resources have been downloaded', async () => {
-    nock(link)
-      .get(htmlPath)
-      .reply(200, html)
-      .get(stylePath)
-      .reply(200, style)
-      .get(imagePath)
-      .reply(200, image)
-      .get(folderImagePath)
-      .reply(200, folderImage)
-      .get(folderAnotherImagePath)
-      .reply(200, folderImage)
-      .get(scriptPath)
-      .reply(200, script);
-
-    const pathToLoadedStyle = `${pathTotempDir}/test-com_files/style.css`;
-    const pathToLoadedImage = `${pathTotempDir}/test-com_files/image.png`;
-    const pathToFolderLoadedImage = `${pathTotempDir}/test-com_files/folder-image.png`;
-    const pathToLoadedScript = `${pathTotempDir}/test-com_files/script.txt`;
-
-    await downloadPage(link, output);
-
-    const loadedStyle = await fsPromises.readFile(pathToLoadedStyle, { encoding: 'utf8' });
-    const loadedImage = await fsPromises.readFile(pathToLoadedImage, { encoding: 'utf8' });
-    const loadedFolerImage = await fsPromises.readFile(pathToFolderLoadedImage, { encoding: 'utf8' });
-    const loadedScript = await fsPromises.readFile(pathToLoadedScript, { encoding: 'utf8' });
-
-    expect(loadedStyle).toBe(style);
-    expect(loadedImage).toBe(image);
-    expect(loadedFolerImage).toBe(folderImage);
-    expect(loadedScript).toBe(script);
   });
 
   test('link with subpath nested resources have been downloaded', async () => {
@@ -128,7 +96,7 @@ describe('pageLoader functionality', () => {
     const pathToFolderLoadedImage = `${pathTotempDir}/test-com_files/folder-image.png`;
     const pathToLoadedScript = `${pathTotempDir}/test-com_files/script.txt`;
 
-    await downloadPage(`${link}/tests/`, output);
+    await downloadPage(`${link}/tests/`, pathTotempDir);
 
     const loadedStyle = await fsPromises.readFile(pathToLoadedStyle, { encoding: 'utf8' });
     const loadedImage = await fsPromises.readFile(pathToLoadedImage, { encoding: 'utf8' });
@@ -143,25 +111,17 @@ describe('pageLoader functionality', () => {
 });
 
 describe('pageLoader error handling', () => {
-  test('passed wrong output', async () => {
+  test('passed wrong pathTotempDir', async () => {
     nock(link).get(htmlPath).reply(200, html);
 
     await expect(downloadPage(link, '/wrong/dir')).rejects.toThrowErrorMatchingSnapshot();
   });
 
-  test('passed not valid link', async () => {
-    const notValidLink = 'test.com';
-
-    await expect(() => {
-      downloadPage(notValidLink, output);
-    }).toThrowError('incorrent url test.com');
-  });
-
   test('passed link to non-existent site', async () => {
-    nock(link).get(htmlPath).replyWithError({ code: 'ENOTFOUND' });
+    nock(link).get(htmlPath).reply(404);
 
     const notValidLink = 'http://qwertyui12345.com/';
 
-    await expect(downloadPage(notValidLink, output)).rejects.toThrowErrorMatchingSnapshot();
+    await expect(downloadPage(notValidLink, pathTotempDir)).rejects.toThrowErrorMatchingSnapshot();
   });
 });

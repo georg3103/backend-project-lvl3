@@ -21,7 +21,7 @@ describe('utils', () => {
   });
 
   test('makePathToFile', () => {
-    const fileUrl = 'https://test.com/script.txt';
+    const fileUrl = 'script.txt';
     const pathToFile = '/tmp/page-loader-Q4W6aZ/test-com_files/script.txt';
     expect(makePathToFile(fileUrl, pathToFilesFolder)).toEqual(pathToFile);
   });

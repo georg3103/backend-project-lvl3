@@ -54,7 +54,7 @@ const changeHtml = (html, dest) => {
 };
 
 /**
- * @param {String} link
+ * @param {String} html
  * @returns {Array} parsed urls
  */
 const getUrls = (html) => {
@@ -76,10 +76,6 @@ const getUrls = (html) => {
 export default (link, output) => {
   const { protocol, hostname, pathname: linkPathname } = url.parse(link);
 
-  if (!protocol || !hostname) {
-    throw new Error(`incorrent url ${link}`);
-  }
-
   const pathToHtml = makePathToHtml(link, output);
   const pathToFilesFolder = makePathToFilesFolder(link, output);
 
@@ -100,7 +96,7 @@ export default (link, output) => {
     .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
     .then(log('created folder for files', pathToFilesFolder))
     .then(() => {
-      const urls = getUrls(html, link);
+      const urls = getUrls(html);
       const fileLoadTasks = new Listr(
         urls.map((pathname) => ({
           title: `load ${pathname}`,
@@ -111,7 +107,8 @@ export default (link, output) => {
             });
             return axios
               .get(resourceLink)
-              .then(({ data: fileData, config: { url: fileUrl } }) => {
+              .then(({ data: fileData, config: { url: loadedUrl } }) => {
+                const fileUrl = loadedUrl.replace(link, '');
                 const loadedResource = { fileData, fileUrl };
                 loadedFiles = loadedFiles.concat(loadedResource);
                 log('loaded', resourceLink);
