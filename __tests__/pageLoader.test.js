@@ -9,7 +9,7 @@ import downloadPage from '../index';
 
 const link = 'https://test.com';
 
-const pathToFixtures = '__tests__/__fixtures__';
+const getFixturePath = (fileName) => path.join('__tests__/__fixtures__', fileName);
 
 let pathTotempDir;
 
@@ -25,11 +25,11 @@ beforeEach(async () => {
 
 describe('pageLoader functionality', () => {
   test('link with subpath nested resources have been downloaded', async () => {
-    const html = await fsPromises.readFile(path.join(pathToFixtures, 'index.html'), { encoding: 'utf8' });
-    const expectedHtml = await fsPromises.readFile(path.join(pathToFixtures, 'changedIndex.html'), { encoding: 'utf8' });
-    const expectedStyle = await fsPromises.readFile(path.join(pathToFixtures, 'style.css'), { encoding: 'utf8' });
-    const expectedImage = await fsPromises.readFile(path.join(pathToFixtures, 'image.png'), { encoding: 'utf8' });
-    const expectedScript = await fsPromises.readFile(path.join(pathToFixtures, 'script.txt'), { encoding: 'utf8' });
+    const html = await fsPromises.readFile(getFixturePath('index.html'), { encoding: 'utf8' });
+    const expectedHtml = await fsPromises.readFile(getFixturePath('changedIndex.html'), { encoding: 'utf8' });
+    const expectedStyle = await fsPromises.readFile(getFixturePath('style.css'), { encoding: 'utf8' });
+    const expectedImage = await fsPromises.readFile(getFixturePath('image.png'), { encoding: 'utf8' });
+    const expectedScript = await fsPromises.readFile(getFixturePath('script.txt'), { encoding: 'utf8' });
 
     nock(`${link}/tests/`)
       .get('/')
@@ -67,7 +67,7 @@ describe('pageLoader functionality', () => {
 
 describe('pageLoader error handling', () => {
   test('passed wrong pathTotempDir', async () => {
-    const html = await fsPromises.readFile(path.join(pathToFixtures, 'index.html'), { encoding: 'utf8' });
+    const html = await fsPromises.readFile(getFixturePath('index.html'), { encoding: 'utf8' });
     nock(link).get('/').reply(200, html);
 
     await expect(downloadPage(link, '/wrong/dir')).rejects.toThrowErrorMatchingSnapshot();
