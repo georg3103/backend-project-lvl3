@@ -29,7 +29,6 @@ describe('pageLoader functionality', () => {
     const expectedHtml = await fsPromises.readFile(path.join(pathToFixtures, 'changedIndex.html'), { encoding: 'utf8' });
     const expectedStyle = await fsPromises.readFile(path.join(pathToFixtures, 'style.css'), { encoding: 'utf8' });
     const expectedImage = await fsPromises.readFile(path.join(pathToFixtures, 'image.png'), { encoding: 'utf8' });
-    const expectedFolderImage = await fsPromises.readFile(path.join(pathToFixtures, 'folder/image.png'), { encoding: 'utf8' });
     const expectedScript = await fsPromises.readFile(path.join(pathToFixtures, 'script.txt'), { encoding: 'utf8' });
 
     nock(`${link}/tests/`)
@@ -40,9 +39,7 @@ describe('pageLoader functionality', () => {
       .get('/image.png')
       .reply(200, expectedImage)
       .get('/folder/image.png')
-      .reply(200, expectedFolderImage)
-      .get('/folder/image1.png')
-      .reply(200, expectedFolderImage)
+      .reply(200, expectedImage)
       .get('/script.txt')
       .reply(200, expectedScript);
 
@@ -63,7 +60,7 @@ describe('pageLoader functionality', () => {
     expect(changedHtml).toBe(expectedHtml);
     expect(loadedStyle).toBe(expectedStyle);
     expect(loadedImage).toBe(expectedImage);
-    expect(loadedFolerImage).toBe(expectedFolderImage);
+    expect(loadedFolerImage).toBe(expectedImage);
     expect(loadedScript).toBe(expectedScript);
   });
 });
