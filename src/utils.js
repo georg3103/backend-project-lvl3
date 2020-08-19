@@ -1,5 +1,6 @@
 import url from 'url';
 import path from 'path';
+import { promises as fsPromises } from 'fs';
 
 /**
  * @param {String} link
@@ -60,4 +61,17 @@ export function changePath(link, output) {
       .concat(`-${base}`)
     : base;
   return path.join(output, fileName);
+}
+
+/**
+ * @param {String} pathTo
+ * @returns {Boolean} checks if folder exists
+ */
+export function isFolder(pathTo) {
+  return fsPromises
+    .stat(pathTo)
+    .then((fsStat) => fsStat.isDirectory())
+    .catch((err) => {
+      throw err;
+    });
 }

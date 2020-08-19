@@ -2,4 +2,4 @@
 
 exports[`pageLoader error handling passed link to non-existent site 1`] = `"Nock: Disallowed net connect for \\"qwertyui12345.com:80/\\""`;
 
-exports[`pageLoader error handling passed wrong pathTotempDir 1`] = `"ENOENT: no such file or directory, open '/wrong/dir/test-com.html'"`;
+exports[`pageLoader error handling passed wrong pathTotempDir 1`] = `"ENOENT: no such file or directory, stat '/wrong/dir'"`;

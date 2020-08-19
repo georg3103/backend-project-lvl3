@@ -11,6 +11,7 @@ import {
   makePathToFile,
   makePathToFilesFolder,
   changePath,
+  isFolder,
 } from './utils';
 
 require('axios-debug-log');
@@ -70,6 +71,30 @@ const getUrls = (html) => {
 };
 
 /**
+ * @param {String} pathToHtml
+ * @param {String} newHtml
+ */
+const downloadIndex = (pathToHtml, newHtml) => fsPromises
+  .writeFile(pathToHtml, newHtml)
+  .then(() => log(pathToHtml, 'index file is dowloaded'));
+
+/**
+ * @param {String} resourceLink
+ * @param {String} link
+ * @param {String} output
+ */
+const downloadResource = (resourceLink, link, output) => axios
+  .get(resourceLink)
+  .then(({ data: fileData, config: { url: loadedUrl } }) => {
+    const fileUrl = loadedUrl.replace(link, '');
+    const pathTofile = makePathToFile(fileUrl, output);
+    return fsPromises.readFile(pathTofile)
+      .then(() => log(pathTofile, 'file exists'))
+      .catch(() => fsPromises.writeFile(pathTofile, fileData)
+        .then(() => log(pathTofile, 'file created')));
+  });
+
+/**
  * @param {String} link
  * @param {String} output
  */
@@ -80,57 +105,34 @@ export default (link, output) => {
   const pathToFilesFolder = makePathToFilesFolder(link, output);
 
   let html;
-  let loadedFiles = [];
+  let newHtml;
 
-  return axios
-    .get(link)
-    .then(({ data }) => {
-      html = data;
-    })
-    .then(() => {
-      const pathToFolder = makePathToFilesFolder(link);
-      const newHtml = changeHtml(html, pathToFolder);
-      return fsPromises.writeFile(pathToHtml, newHtml);
-    })
-    .then(log('created main html', pathToHtml))
-    .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
-    .then(log('created folder for files', pathToFilesFolder))
-    .then(() => {
-      const urls = getUrls(html);
-      const fileLoadTasks = new Listr(
-        urls.map((pathname) => ({
-          title: `load ${pathname}`,
-          task: () => {
-            const resPathname = path.normalize(path.join(linkPathname, pathname));
-            const resourceLink = url.format({
-              protocol, hostname, pathname: resPathname,
-            });
-            return axios
-              .get(resourceLink)
-              .then(({ data: fileData, config: { url: loadedUrl } }) => {
-                const fileUrl = loadedUrl.replace(link, '');
-                const loadedResource = { fileData, fileUrl };
-                loadedFiles = loadedFiles.concat(loadedResource);
-                log('loaded', resourceLink);
+  return isFolder(output)
+    .then(() => axios
+      .get(link)
+      .then(({ data }) => {
+        html = data;
+      })
+      .then(() => {
+        const pathToFolder = makePathToFilesFolder(link);
+        newHtml = changeHtml(html, pathToFolder);
+      })
+      .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
+      .then(log('created folder for files', pathToFilesFolder))
+      .then(() => {
+        const urls = getUrls(html);
+        const fileLoadTasks = new Listr(
+          urls.map((pathname) => ({
+            title: `load ${pathname}`,
+            task: () => {
+              const resPathname = path.normalize(path.join(linkPathname, pathname));
+              const resourceLink = url.format({
+                protocol, hostname, pathname: resPathname,
               });
-          },
-        })),
-      );
-      return fileLoadTasks.run();
-    })
-    .then(() => {
-      const fileTasks = new Listr(
-        loadedFiles.map(({ fileData, fileUrl }) => ({
-          title: `write ${fileUrl}`,
-          task: () => {
-            const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);
-            return fsPromises.readFile(pathTofile)
-              .then(() => log(pathTofile, 'file exists'))
-              .catch(() => fsPromises.writeFile(pathTofile, fileData)
-                .then(() => log(pathTofile, 'file created')));
-          },
-        })),
-      );
-      return fileTasks.run();
-    });
+              return downloadResource(resourceLink, link, pathToFilesFolder);
+            },
+          })),
+        );
+        return Promise.all([downloadIndex(pathToHtml, newHtml), fileLoadTasks.run()]);
+      }));
 };
