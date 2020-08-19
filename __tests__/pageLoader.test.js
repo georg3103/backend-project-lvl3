@@ -11,25 +11,30 @@ const link = 'https://test.com';
 
 const getFixturePath = (fileName) => path.join('__tests__/__fixtures__', fileName);
 
-let pathTotempDir;
+const readFile = async (pathTo) => {
+  const file = await fsPromises.readFile(pathTo, { encoding: 'utf8' });
+  return file;
+};
 
 beforeAll(async () => {
   nock.disableNetConnect();
 });
 
+let pathTotempDir;
+
 beforeEach(async () => {
   pathTotempDir = await fsPromises.mkdtemp(
-    path.resolve(os.tmpdir(), 'page-loader-'),
+    path.join(os.tmpdir(), 'page-loader-'),
   );
 });
 
 describe('pageLoader functionality', () => {
   test('link with subpath nested resources have been downloaded', async () => {
-    const html = await fsPromises.readFile(getFixturePath('index.html'), { encoding: 'utf8' });
-    const expectedHtml = await fsPromises.readFile(getFixturePath('changedIndex.html'), { encoding: 'utf8' });
-    const expectedStyle = await fsPromises.readFile(getFixturePath('style.css'), { encoding: 'utf8' });
-    const expectedImage = await fsPromises.readFile(getFixturePath('image.png'), { encoding: 'utf8' });
-    const expectedScript = await fsPromises.readFile(getFixturePath('script.txt'), { encoding: 'utf8' });
+    const html = await readFile(getFixturePath('index.html'));
+    const expectedHtml = await readFile(getFixturePath('changedIndex.html'));
+    const expectedStyle = await readFile(getFixturePath('style.css'));
+    const expectedImage = await readFile(getFixturePath('image.png'));
+    const expectedScript = await readFile(getFixturePath('script.txt'));
 
     nock(`${link}/tests/`)
       .get('/')
@@ -43,19 +48,13 @@ describe('pageLoader functionality', () => {
       .get('/script.txt')
       .reply(200, expectedScript);
 
-    const pathToChangedHtml = `${pathTotempDir}/test-com.html`;
-    const pathToLoadedStyle = `${pathTotempDir}/test-com_files/style.css`;
-    const pathToLoadedImage = `${pathTotempDir}/test-com_files/image.png`;
-    const pathToFolderLoadedImage = `${pathTotempDir}/test-com_files/folder-image.png`;
-    const pathToLoadedScript = `${pathTotempDir}/test-com_files/script.txt`;
-
     await downloadPage(`${link}/tests/`, pathTotempDir);
 
-    const changedHtml = await fsPromises.readFile(pathToChangedHtml, { encoding: 'utf8' });
-    const loadedStyle = await fsPromises.readFile(pathToLoadedStyle, { encoding: 'utf8' });
-    const loadedImage = await fsPromises.readFile(pathToLoadedImage, { encoding: 'utf8' });
-    const loadedFolerImage = await fsPromises.readFile(pathToFolderLoadedImage, { encoding: 'utf8' });
-    const loadedScript = await fsPromises.readFile(pathToLoadedScript, { encoding: 'utf8' });
+    const changedHtml = await readFile(`${pathTotempDir}/test-com.html`);
+    const loadedStyle = await readFile(`${pathTotempDir}/test-com_files/style.css`);
+    const loadedImage = await readFile(`${pathTotempDir}/test-com_files/image.png`);
+    const loadedFolerImage = await readFile(`${pathTotempDir}/test-com_files/folder-image.png`);
+    const loadedScript = await readFile(`${pathTotempDir}/test-com_files/script.txt`);
 
     expect(changedHtml).toBe(expectedHtml);
     expect(loadedStyle).toBe(expectedStyle);
@@ -67,7 +66,7 @@ describe('pageLoader functionality', () => {
 
 describe('pageLoader error handling', () => {
   test('passed wrong pathTotempDir', async () => {
-    const html = await fsPromises.readFile(getFixturePath('index.html'), { encoding: 'utf8' });
+    const html = await readFile(getFixturePath('index.html'));
     nock(link).get('/').reply(200, html);
 
     await expect(downloadPage(link, '/wrong/dir')).rejects.toThrowErrorMatchingSnapshot();
