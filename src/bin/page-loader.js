@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import commander from 'commander';
-import { version } from '../package.json';
+import { version } from '../../package.json';
 
-import downloadPage from '../index';
+import downloadPage from '..';
 
 commander
   .version(version)

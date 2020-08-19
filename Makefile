@@ -1,7 +1,7 @@
 install: install-deps
 
 run:
-	npx babel-node -- 'bin/page-loader' 10
+	DEBUG=axios,page-loader npx babel-node 'src/bin/page-loader.js' $(filter-out $@,$(MAKECMDGOALS))
 
 build:
 	rm -rf dist

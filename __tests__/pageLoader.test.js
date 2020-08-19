@@ -5,7 +5,7 @@ import { promises as fsPromises } from 'fs';
 import os from 'os';
 import path from 'path';
 import nock from 'nock';
-import downloadPage from '../index';
+import downloadPage from '../src';
 
 const link = 'https://test.com';
 
