@@ -99,8 +99,7 @@ const downloadResource = (resourceLink, link, output) => axios
  * @param {String} output
  */
 export default (link, output) => {
-  const { protocol, hostname, pathname: linkPathname } = url.parse(link);
-
+  const parsedUrl = new URL(link);
   const pathToHtml = makePathToHtml(link, output);
   const pathToFilesFolder = makePathToFilesFolder(link, output);
 
@@ -112,26 +111,25 @@ export default (link, output) => {
       .get(link)
       .then(({ data }) => {
         html = data;
-      })
-      .then(() => {
         const pathToFolder = makePathToFilesFolder(link);
         newHtml = changeHtml(html, pathToFolder);
       })
       .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
-      .then(log('created folder for files', pathToFilesFolder))
       .then(() => {
         const urls = getUrls(html);
         const fileLoadTasks = new Listr(
           urls.map((pathname) => ({
             title: `load ${pathname}`,
             task: () => {
-              const resPathname = path.normalize(path.join(linkPathname, pathname));
+              const resPathname = path.normalize(path.join(parsedUrl.pathname, pathname));
               const resourceLink = url.format({
-                protocol, hostname, pathname: resPathname,
+                protocol: parsedUrl.protocol,
+                hostname: parsedUrl.hostname,
+                pathname: resPathname,
               });
               return downloadResource(resourceLink, link, pathToFilesFolder);
             },
-          })),
+          }), { concurrent: true, exitOnError: false }),
         );
         return Promise.all([downloadIndex(pathToHtml, newHtml), fileLoadTasks.run()]);
       }));
