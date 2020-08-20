@@ -7,9 +7,10 @@ import downloadPage from '..';
 commander
   .version(version)
   .description('The utility for downloading page from the web')
-  .arguments('<url> <output>')
-  .action((url, output) => {
-    downloadPage(url, output)
+  .arguments('<url>')
+  .option('--output [path]', 'Output path', __dirname)
+  .action((url, cmd) => {
+    downloadPage(url, cmd.output)
       .then(() => {
         console.log('page is loaded');
         process.exit(0);
