@@ -64,12 +64,12 @@ export function changePath(link, output) {
 }
 
 /**
- * @param {String} pathTo
+ * @param {String} pathToFolder
  * @returns {Boolean} checks if folder exists
  */
-export function isFolder(pathTo) {
+export function isFolder(pathToFolder) {
   return fsPromises
-    .stat(pathTo)
+    .stat(pathToFolder)
     .then((fsStat) => fsStat.isDirectory())
     .catch((err) => {
       throw err;

@@ -42,9 +42,8 @@ const changeHtml = (html, dest) => {
   const $ = cheerio.load(html);
   Object.keys(tags)
     .forEach((key) => {
-      const { selector } = tags[key];
+      const { selector, attr } = tags[key];
       $(selector).map((_, el) => {
-        const { attr } = tags[key];
         const pathToFile = $(el).attr(attr);
         const newPathToFile = changePath(pathToFile, dest);
         return $(el).attr(attr, newPathToFile);
@@ -84,7 +83,7 @@ const downloadIndex = (pathToHtml, newHtml) => fsPromises
  * @param {String} output
  */
 const downloadResource = (resourceLink, link, output) => axios
-  .get(resourceLink)
+  .get(resourceLink, { responseType: 'arraybuffer' })
   .then(({ data: fileData, config: { url: loadedUrl } }) => {
     const fileUrl = loadedUrl.replace(link, '');
     const pathTofile = makePathToFile(fileUrl, output);
@@ -114,6 +113,7 @@ export default (link, output) => {
         const pathToFolder = makePathToFilesFolder(link);
         newHtml = changeHtml(html, pathToFolder);
       })
+      .then(() => downloadIndex(pathToHtml, newHtml))
       .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
       .then(() => {
         const urls = getUrls(html);
@@ -131,6 +131,6 @@ export default (link, output) => {
             },
           }), { concurrent: true, exitOnError: false }),
         );
-        return Promise.all([downloadIndex(pathToHtml, newHtml), fileLoadTasks.run()]);
+        return Promise.all([fileLoadTasks.run()]);
       }));
 };

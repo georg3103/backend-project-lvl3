@@ -11,8 +11,8 @@ const link = 'https://test.com';
 
 const getFixturePath = (fileName) => path.join('__tests__/__fixtures__', fileName);
 
-const readFile = async (pathTo) => {
-  const file = await fsPromises.readFile(pathTo, { encoding: 'utf8' });
+const readFile = async (pathToFile) => {
+  const file = await fsPromises.readFile(pathToFile, { encoding: 'utf8' });
   return file;
 };
 
@@ -20,10 +20,10 @@ beforeAll(async () => {
   nock.disableNetConnect();
 });
 
-let pathTotempDir;
+let pathToTempDir;
 
 beforeEach(async () => {
-  pathTotempDir = await fsPromises.mkdtemp(
+  pathToTempDir = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), 'page-loader-'),
   );
 });
@@ -48,13 +48,13 @@ describe('pageLoader functionality', () => {
       .get('/script.txt')
       .reply(200, expectedScript);
 
-    await downloadPage(`${link}/tests/`, pathTotempDir);
+    await downloadPage(`${link}/tests/`, pathToTempDir);
 
-    const changedHtml = await readFile(`${pathTotempDir}/test-com.html`);
-    const loadedStyle = await readFile(`${pathTotempDir}/test-com_files/style.css`);
-    const loadedImage = await readFile(`${pathTotempDir}/test-com_files/image.png`);
-    const loadedFolerImage = await readFile(`${pathTotempDir}/test-com_files/folder-image.png`);
-    const loadedScript = await readFile(`${pathTotempDir}/test-com_files/script.txt`);
+    const changedHtml = await readFile(`${pathToTempDir}/test-com.html`);
+    const loadedStyle = await readFile(`${pathToTempDir}/test-com_files/style.css`);
+    const loadedImage = await readFile(`${pathToTempDir}/test-com_files/image.png`);
+    const loadedFolerImage = await readFile(`${pathToTempDir}/test-com_files/folder-image.png`);
+    const loadedScript = await readFile(`${pathToTempDir}/test-com_files/script.txt`);
 
     expect(changedHtml).toBe(expectedHtml);
     expect(loadedStyle).toBe(expectedStyle);
@@ -65,7 +65,7 @@ describe('pageLoader functionality', () => {
 });
 
 describe('pageLoader error handling', () => {
-  test('passed wrong pathTotempDir', async () => {
+  test('passed wrong pathToTempDir', async () => {
     const html = await readFile(getFixturePath('index.html'));
     nock(link).get('/').reply(200, html);
 
@@ -77,6 +77,6 @@ describe('pageLoader error handling', () => {
 
     const notValidLink = 'http://qwertyui12345.com/';
 
-    await expect(downloadPage(notValidLink, pathTotempDir)).rejects.toThrowErrorMatchingSnapshot();
+    await expect(downloadPage(notValidLink, pathToTempDir)).rejects.toThrowErrorMatchingSnapshot();
   });
 });

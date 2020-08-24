@@ -8,7 +8,7 @@ commander
   .version(version)
   .description('The utility for downloading page from the web')
   .arguments('<url>')
-  .option('--output [path]', 'Output path', __dirname)
+  .option('--output [path]', 'Output path', process.cwd())
   .action((url, cmd) => {
     downloadPage(url, cmd.output)
       .then(() => {
