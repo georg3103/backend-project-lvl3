@@ -13,7 +13,6 @@ commander
     downloadPage(url, cmd.output)
       .then(() => {
         console.log('page is loaded');
-        process.exit(0);
       })
       .catch((err) => {
         console.error('Download completed with error:', err);

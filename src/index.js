@@ -11,7 +11,6 @@ import {
   makePathToFile,
   makePathToFilesFolder,
   changePath,
-  isFolder,
 } from './utils';
 
 require('axios-debug-log');
@@ -87,10 +86,8 @@ const downloadResource = (resourceLink, link, output) => axios
   .then(({ data: fileData, config: { url: loadedUrl } }) => {
     const fileUrl = loadedUrl.replace(link, '');
     const pathTofile = makePathToFile(fileUrl, output);
-    return fsPromises.readFile(pathTofile)
-      .then(() => log(pathTofile, 'file exists'))
-      .catch(() => fsPromises.writeFile(pathTofile, fileData)
-        .then(() => log(pathTofile, 'file created')));
+    return fsPromises.writeFile(pathTofile, fileData)
+      .then(() => log(pathTofile, 'file created'));
   });
 
 /**
@@ -105,32 +102,31 @@ export default (link, output) => {
   let html;
   let newHtml;
 
-  return isFolder(output)
-    .then(() => axios
-      .get(link)
-      .then(({ data }) => {
-        html = data;
-        const pathToFolder = makePathToFilesFolder(link);
-        newHtml = changeHtml(html, pathToFolder);
-      })
-      .then(() => downloadIndex(pathToHtml, newHtml))
-      .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
-      .then(() => {
-        const urls = getUrls(html);
-        const fileLoadTasks = new Listr(
-          urls.map((pathname) => ({
-            title: `load ${pathname}`,
-            task: () => {
-              const resPathname = path.normalize(path.join(parsedUrl.pathname, pathname));
-              const resourceLink = url.format({
-                protocol: parsedUrl.protocol,
-                hostname: parsedUrl.hostname,
-                pathname: resPathname,
-              });
-              return downloadResource(resourceLink, link, pathToFilesFolder);
-            },
-          }), { concurrent: true, exitOnError: false }),
-        );
-        return Promise.all([fileLoadTasks.run()]);
-      }));
+  return axios
+    .get(link, { responseType: 'arraybuffer' })
+    .then(({ data }) => {
+      html = data;
+      const pathToFolder = makePathToFilesFolder(link);
+      newHtml = changeHtml(html, pathToFolder);
+    })
+    .then(() => downloadIndex(pathToHtml, newHtml))
+    .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
+    .then(() => {
+      const urls = getUrls(html);
+      const fileLoadTasks = new Listr(
+        urls.map((pathname) => ({
+          title: `load ${pathname}`,
+          task: () => {
+            const resPathname = path.normalize(path.join(parsedUrl.pathname, pathname));
+            const resourceLink = url.format({
+              protocol: parsedUrl.protocol,
+              hostname: parsedUrl.hostname,
+              pathname: resPathname,
+            });
+            return downloadResource(resourceLink, link, pathToFilesFolder);
+          },
+        }), { concurrent: true, exitOnError: false }),
+      );
+      return Promise.all([fileLoadTasks.run()]);
+    });
 };

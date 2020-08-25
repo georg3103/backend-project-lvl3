@@ -29,7 +29,7 @@ beforeEach(async () => {
 });
 
 describe('pageLoader functionality', () => {
-  test('link with subpath nested resources have been downloaded', async () => {
+  test('link with subpath nested resources has been downloaded', async () => {
     const html = await readFile(getFixturePath('index.html'));
     const expectedHtml = await readFile(getFixturePath('changedIndex.html'));
     const expectedStyle = await readFile(getFixturePath('style.css'));
