@@ -1,6 +1,6 @@
 # backend-project-lvl3
 
-<a href="https://github.com/georg3103/backend-project-lvl3/workflows/build/badge.svg">
+<a href="https://github.com/georg3103/backend-project-lvl3/actions?query=workflow%3Abuild">
   <img src="https://github.com/georg3103/backend-project-lvl3/workflows/build/badge.svg">
 </a>
 

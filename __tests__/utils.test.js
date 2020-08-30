@@ -1,7 +1,7 @@
 import { describe, test, expect } from '@jest/globals';
 import {
   makePathToHtml,
-  makePathToFilesFolder,
+  makePathToFolder,
   makePathToFile,
   changePath,
 } from '../src/utils';
@@ -16,8 +16,8 @@ describe('utils', () => {
     expect(makePathToHtml(link, output)).toEqual(pathToHtml);
   });
 
-  test('makePathToFilesFolder', () => {
-    expect(makePathToFilesFolder(link, output)).toEqual(pathToFilesFolder);
+  test('makePathToFolder', () => {
+    expect(makePathToFolder(link, output)).toEqual(pathToFilesFolder);
   });
 
   test('makePathToFile', () => {

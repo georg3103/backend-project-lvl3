@@ -3,55 +3,55 @@ import path from 'path';
 
 /**
  * @param {String} link
- * @param {Srring} output
+ * @param {String} pathToMainFolder path to folder containing downloaded resources
  * @returns {String} path to main html file
  */
-export function makePathToHtml(link, output) {
+export function makePathToHtml(link, pathToMainFolder) {
   const { hostname } = url.parse(link);
   const fileName = hostname
     .replace(/\W+/g, '-')
     .concat('.html');
-  return path.join(output, fileName);
+  return path.join(pathToMainFolder, fileName);
 }
 
 /**
  * @param {String} link
- * @param {String} output
- * @returns {String} path to files folder
+ * @param {String} pathToFolder path to folder containing downloaded resources
+ * @returns {String} path to folder containing resouce files (./hostname/test_files)
  */
-export function makePathToFilesFolder(link, output = '') {
+export function makePathToFolder(link, pathToFolder = '') {
   const { hostname } = url.parse(link);
   const fileFolderName = hostname
     .replace(/\W+/g, '-')
     .concat('_files');
-  return path.join(output, fileFolderName);
+  return path.join(pathToFolder, fileFolderName);
 }
 
 /**
  * @param {String} link
- * @param {String} output
- * @returns {String} path to file
+ * @param {String} pathToFilesFolder path to folder of files containing downloaded resources
+ * @returns {String} modified path to file
  */
-export function makePathToFile(link, output) {
+export function makePathToFile(link, pathToFilesFolder) {
   const { pathname } = url.parse(link);
   const { dir, base } = path.parse(pathname);
 
   if (dir === '/' || !dir.length) {
-    return path.join(output, base);
+    return path.join(pathToFilesFolder, base);
   }
 
   const fileName = dir
     .replace(/\W+/g, '-')
     .concat(`-${base}`);
-  return path.join(output, fileName);
+  return path.join(pathToFilesFolder, fileName);
 }
 
 /**
  * @param {String} link
- * @param {String} output
- * @returns {String} path to file
+ * @param {String} pathToFolder path to folder containing downloaded resources
+ * @returns {String} modified path to file
  */
-export function changePath(link, output) {
+export function changePath(link, pathToFolder) {
   const { pathname } = url.parse(link);
   const { dir, base } = path.parse(pathname);
   const fileName = dir.slice(1).length
@@ -59,5 +59,5 @@ export function changePath(link, output) {
       .replace(/\W+/g, '-')
       .concat(`-${base}`)
     : base;
-  return path.join(output, fileName);
+  return path.join(pathToFolder, fileName);
 }
