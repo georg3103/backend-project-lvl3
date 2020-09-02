@@ -32,34 +32,25 @@ describe('pageLoader functionality', () => {
   test('link with subpath nested resources has been downloaded', async () => {
     const html = await readFile(getFixturePath('index.html'));
     const expectedHtml = await readFile(getFixturePath('changedIndex.html'));
-    const expectedStyle = await readFile(getFixturePath('style.css'));
-    const expectedImage = await readFile(getFixturePath('image.png'));
-    const expectedScript = await readFile(getFixturePath('script.txt'));
+    const expectedStyle = 'a { color: red }';
+    const expectedScript = 'console.log("Hello world!")';
 
     nock(`${link}/tests/`)
       .get('/')
       .reply(200, html)
       .get('/style.css')
       .reply(200, expectedStyle)
-      .get('/image.png')
-      .reply(200, expectedImage)
-      .get('/folder/image.png')
-      .reply(200, expectedImage)
-      .get('/script.txt')
+      .get('/folder/script.txt')
       .reply(200, expectedScript);
 
     await downloadPage(`${link}/tests/`, pathToTempDir);
 
     const changedHtml = await readFile(`${pathToTempDir}/test-com.html`);
     const loadedStyle = await readFile(`${pathToTempDir}/test-com_files/style.css`);
-    const loadedImage = await readFile(`${pathToTempDir}/test-com_files/image.png`);
-    const loadedFolerImage = await readFile(`${pathToTempDir}/test-com_files/folder-image.png`);
-    const loadedScript = await readFile(`${pathToTempDir}/test-com_files/script.txt`);
+    const loadedScript = await readFile(`${pathToTempDir}/test-com_files/folder-script.txt`);
 
     expect(changedHtml).toBe(expectedHtml);
     expect(loadedStyle).toBe(expectedStyle);
-    expect(loadedImage).toBe(expectedImage);
-    expect(loadedFolerImage).toBe(expectedImage);
     expect(loadedScript).toBe(expectedScript);
   });
 });

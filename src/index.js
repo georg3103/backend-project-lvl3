@@ -13,11 +13,11 @@ import {
   changePath,
 } from './utils';
 
-require('axios-debug-log');
+import 'axios-debug-log';
 
 const log = debug('page-loader');
 
-const tags = {
+const tagAttributesMapping = {
   link: 'href',
   img: 'src',
   script: 'src',
@@ -26,39 +26,30 @@ const tags = {
 /**
  * @param {String} html previously loaded html
  * @param {String} pathToFolder path to folder containing loaded resources
- * @returns {String} new html with changed resource paths
+ * @param {String} html previously loaded html
+ * @returns {Object} return parsed urls and changed html ({ urls, html })
  */
-const changeHtml = (html, pathToFolder) => {
+const changeHtml = (html, pathToFolder, parsedUrl) => {
   const $ = cheerio.load(html);
-  Object.keys(tags)
+  const urls = [];
+  Object.keys(tagAttributesMapping)
     .forEach((tag) => {
-      const attr = tags[tag];
+      const attr = tagAttributesMapping[tag];
       const selector = `${tag}[${attr}]`;
       $(selector).map((_, el) => {
-        const pathToFile = $(el).attr(attr);
-        const newPathToFile = changePath(pathToFile, pathToFolder);
+        const pathToResource = $(el).attr(attr);
+        const resPathname = path.normalize(path.join(parsedUrl.pathname, pathToResource));
+        const resourceLink = url.format({
+          protocol: parsedUrl.protocol,
+          hostname: parsedUrl.hostname,
+          pathname: resPathname,
+        });
+        urls.push(resourceLink);
+        const newPathToFile = changePath(pathToResource, pathToFolder);
         return $(el).attr(attr, newPathToFile);
       });
     });
-
-  return $.html();
-};
-
-/**
- * @param {String} html
- * @returns {Array} links to resources
- */
-const getUrls = (html) => {
-  const $ = cheerio.load(html);
-  return Object.keys(tags)
-    .map((tag) => {
-      const attr = tags[tag];
-      const selector = `${tag}[${attr}]`;
-      return $(selector)
-        .map((_, el) => $(el).attr(attr))
-        .get();
-    })
-    .flat();
+  return { urls, html: $.html() };
 };
 
 /**
@@ -76,23 +67,15 @@ const downloadResource = (linkToResource, linkToSite, pathToFilesFolder) => axio
   });
 
 /**
- * @param {Object} options { link, urls, parsedUrl, pathToFilesFolder }
+ * @param {String} linkToSite link to site
+ * @param {Array} urls array of resource links
+ * @param {String} pathToFilesFolder path to loaded files folder
  * @returns {Array} load tasks
  */
-const createLoadTasks = ({
-  link, urls, parsedUrl, pathToFilesFolder,
-}) => new Listr(
+const createLoadTasks = (linkToSite, urls, pathToFilesFolder) => new Listr(
   urls.map((pathname) => ({
     title: `load ${pathname}`,
-    task: () => {
-      const resPathname = path.normalize(path.join(parsedUrl.pathname, pathname));
-      const resourceLink = url.format({
-        protocol: parsedUrl.protocol,
-        hostname: parsedUrl.hostname,
-        pathname: resPathname,
-      });
-      return downloadResource(resourceLink, link, pathToFilesFolder);
-    },
+    task: () => downloadResource(pathname, linkToSite, pathToFilesFolder),
   }), { concurrent: true, exitOnError: false }),
 );
 
@@ -111,14 +94,12 @@ export default (link, output) => {
     .get(link)
     .then(({ data: html }) => {
       const pathToFolder = makePathToFolder(link);
-      const newHtml = changeHtml(html, pathToFolder);
-      const urls = getUrls(html);
-      fileLoadTasks = createLoadTasks({
-        link, urls, parsedUrl, pathToFilesFolder,
-      });
+      const { urls, html: newHtml } = changeHtml(html, pathToFolder, parsedUrl);
+      fileLoadTasks = createLoadTasks(link, urls, pathToFilesFolder);
       return fsPromises.writeFile(pathToHtml, newHtml);
     })
     .then(() => log(pathToHtml, 'index file is dowloaded'))
-    .then(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true }))
+    .then(() => fsPromises.access(pathToFilesFolder)
+      .catch(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true })))
     .then(() => fileLoadTasks.run());
 };
