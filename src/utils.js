@@ -2,15 +2,23 @@ import path from 'path';
 
 /**
  * @param {String} link
+ * @param {String} pathToFolder path to folder
+ * @returns {String} resolved path
+ */
+function makePath(link, pathToMainFolder = '') {
+  const { hostname } = new URL(link);
+  const fileName = hostname
+    .replace(/\W+/g, '-');
+  return path.join(pathToMainFolder, fileName);
+}
+
+/**
+ * @param {String} link
  * @param {String} pathToMainFolder path to folder containing downloaded resources
  * @returns {String} path to main html file
  */
-export function makePathToHtml(link, pathToMainFolder) {
-  const { hostname } = new URL(link);
-  const fileName = hostname
-    .replace(/\W+/g, '-')
-    .concat('.html');
-  return path.join(pathToMainFolder, fileName);
+export function makePathToHtml(link, pathToMainFolder = '') {
+  return `${makePath(link, pathToMainFolder)}.html`;
 }
 
 /**
@@ -19,11 +27,7 @@ export function makePathToHtml(link, pathToMainFolder) {
  * @returns {String} path to folder containing resouce files (./hostname/test_files)
  */
 export function makePathToFolder(link, pathToFolder = '') {
-  const { hostname } = new URL(link);
-  const fileFolderName = hostname
-    .replace(/\W+/g, '-')
-    .concat('_files');
-  return path.join(pathToFolder, fileFolderName);
+  return `${makePath(link, pathToFolder)}_files`;
 }
 
 /**

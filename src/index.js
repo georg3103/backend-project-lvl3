@@ -62,8 +62,8 @@ const downloadResource = (linkToResource, linkToSite, pathToFilesFolder) => axio
   .then(({ data: fileData, config: { url: loadedUrl } }) => {
     const fileUrl = loadedUrl.replace(linkToSite, '');
     const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);
-    return fsPromises.writeFile(pathTofile, fileData)
-      .then(() => log(pathTofile, 'file created'));
+    log(pathTofile, 'creating a file');
+    return fsPromises.writeFile(pathTofile, fileData);
   });
 
 /**
@@ -96,9 +96,9 @@ export default (link, output) => {
       const pathToFolder = makePathToFolder(link);
       const { urls, html: newHtml } = changeHtml(html, pathToFolder, parsedUrl);
       fileLoadTasks = createLoadTasks(link, urls, pathToFilesFolder);
+      log(pathToHtml, 'index file is is loading');
       return fsPromises.writeFile(pathToHtml, newHtml);
     })
-    .then(() => log(pathToHtml, 'index file is dowloaded'))
     .then(() => fsPromises.access(pathToFilesFolder)
       .catch(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true })))
     .then(() => fileLoadTasks.run());
