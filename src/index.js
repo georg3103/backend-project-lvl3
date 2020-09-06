@@ -27,7 +27,7 @@ const tagAttributesMapping = {
  * @param {String} html previously loaded html
  * @param {String} pathToFolder path to folder containing loaded resources
  * @param {String} html previously loaded html
- * @returns {Object} return parsed urls and changed html ({ urls, html })
+ * @returns {Object} return parsed urls and changed html ({ urls, html }) , url ({url, pathToFile})
  */
 const changeHtml = (html, pathToFolder, parsedUrl) => {
   const $ = cheerio.load(html);
@@ -36,17 +36,20 @@ const changeHtml = (html, pathToFolder, parsedUrl) => {
     .forEach((tag) => {
       const attr = tagAttributesMapping[tag];
       const selector = `${tag}[${attr}]`;
-      $(selector).map((_, el) => {
+      $(selector).each((_, el) => {
         const pathToResource = $(el).attr(attr);
-        const resPathname = path.normalize(path.join(parsedUrl.pathname, pathToResource));
-        const resourceLink = url.format({
-          protocol: parsedUrl.protocol,
-          hostname: parsedUrl.hostname,
-          pathname: resPathname,
-        });
-        urls.push(resourceLink);
-        const newPathToFile = changePath(pathToResource, pathToFolder);
-        return $(el).attr(attr, newPathToFile);
+        if (url.parse(pathToResource).host === null) {
+          const resPathname = path.normalize(path.join(parsedUrl.pathname, pathToResource));
+          const resourceLink = url.format({
+            protocol: parsedUrl.protocol,
+            hostname: parsedUrl.hostname,
+            pathname: resPathname,
+          });
+          const pathToFile = resourceLink.replace(parsedUrl.href, '');
+          urls.push({ url: resourceLink, pathToFile });
+          const newPathToFile = changePath(pathToResource, pathToFolder);
+          $(el).attr(attr, newPathToFile);
+        }
       });
     });
   return { urls, html: $.html() };
@@ -57,25 +60,23 @@ const changeHtml = (html, pathToFolder, parsedUrl) => {
  * @param {String} linkToSite link to site
  * @param {String} pathToFilesFolder path to loaded files folder
  */
-const downloadResource = (linkToResource, linkToSite, pathToFilesFolder) => axios
+const downloadResource = (linkToResource, pathToFile, pathToFilesFolder) => axios
   .get(linkToResource, { responseType: 'arraybuffer' })
-  .then(({ data: fileData, config: { url: loadedUrl } }) => {
-    const fileUrl = loadedUrl.replace(linkToSite, '');
-    const pathTofile = makePathToFile(fileUrl, pathToFilesFolder);
+  .then(({ data: fileData }) => {
+    const pathTofile = makePathToFile(pathToFile, pathToFilesFolder);
     log(pathTofile, 'creating a file');
     return fsPromises.writeFile(pathTofile, fileData);
   });
 
 /**
- * @param {String} linkToSite link to site
  * @param {Array} urls array of resource links
  * @param {String} pathToFilesFolder path to loaded files folder
  * @returns {Array} load tasks
  */
-const createLoadTasks = (linkToSite, urls, pathToFilesFolder) => new Listr(
-  urls.map((pathname) => ({
-    title: `load ${pathname}`,
-    task: () => downloadResource(pathname, linkToSite, pathToFilesFolder),
+const createLoadTasks = (urls, pathToFilesFolder) => new Listr(
+  urls.map(({ url: urlItem, pathToFile }) => ({
+    title: `load ${urlItem}`,
+    task: () => downloadResource(urlItem, pathToFile, pathToFilesFolder),
   }), { concurrent: true, exitOnError: false }),
 );
 
@@ -88,18 +89,22 @@ export default (link, output) => {
   const pathToHtml = makePathToHtml(link, output);
   const pathToFilesFolder = makePathToFolder(link, output);
 
+  let newHtml;
   let fileLoadTasks = [];
 
   return axios
     .get(link)
     .then(({ data: html }) => {
       const pathToFolder = makePathToFolder(link);
-      const { urls, html: newHtml } = changeHtml(html, pathToFolder, parsedUrl);
-      fileLoadTasks = createLoadTasks(link, urls, pathToFilesFolder);
-      log(pathToHtml, 'index file is is loading');
-      return fsPromises.writeFile(pathToHtml, newHtml);
+      const { urls, html: changedHtml } = changeHtml(html, pathToFolder, parsedUrl);
+      newHtml = changedHtml;
+      fileLoadTasks = createLoadTasks(urls, pathToFilesFolder);
     })
     .then(() => fsPromises.access(pathToFilesFolder)
       .catch(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true })))
+    .then(() => {
+      log(pathToHtml, 'index file is is loading');
+      return fsPromises.writeFile(pathToHtml, newHtml);
+    })
     .then(() => fileLoadTasks.run());
 };

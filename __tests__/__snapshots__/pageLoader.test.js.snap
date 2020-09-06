@@ -1,5 +1,3 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`pageLoader error handling passed link to non-existent site 1`] = `"Nock: Disallowed net connect for \\"qwertyui12345.com:80/\\""`;
-
-exports[`pageLoader error handling passed wrong pathToTempDir 1`] = `"ENOENT: no such file or directory, open '/wrong/dir/test-com.html'"`;
+exports[`pageLoader error handling passed link to non-existent site 1`] = `"Request failed with status code 404"`;

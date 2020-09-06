@@ -8,6 +8,9 @@ import nock from 'nock';
 import downloadPage from '../src';
 
 const link = 'https://test.com';
+const resourcesFolder = 'test-com_files';
+let pathToTempDir;
+let pathToResources;
 
 const getFixturePath = (fileName) => path.join('__tests__/__fixtures__', fileName);
 
@@ -16,16 +19,13 @@ const readFile = async (pathToFile) => {
   return file;
 };
 
-beforeAll(async () => {
-  nock.disableNetConnect();
-});
-
-let pathToTempDir;
+beforeAll(() => nock.disableNetConnect());
 
 beforeEach(async () => {
   pathToTempDir = await fsPromises.mkdtemp(
     path.join(os.tmpdir(), 'page-loader-'),
   );
+  pathToResources = `${pathToTempDir}/${resourcesFolder}`;
 });
 
 describe('pageLoader functionality', () => {
@@ -46,8 +46,8 @@ describe('pageLoader functionality', () => {
     await downloadPage(`${link}/tests/`, pathToTempDir);
 
     const changedHtml = await readFile(`${pathToTempDir}/test-com.html`);
-    const loadedStyle = await readFile(`${pathToTempDir}/test-com_files/style.css`);
-    const loadedScript = await readFile(`${pathToTempDir}/test-com_files/folder-script.txt`);
+    const loadedStyle = await readFile(`${pathToResources}/style.css`);
+    const loadedScript = await readFile(`${pathToResources}/folder-script.txt`);
 
     expect(changedHtml).toBe(expectedHtml);
     expect(loadedStyle).toBe(expectedStyle);
@@ -56,17 +56,10 @@ describe('pageLoader functionality', () => {
 });
 
 describe('pageLoader error handling', () => {
-  test('passed wrong pathToTempDir', async () => {
-    const html = await readFile(getFixturePath('index.html'));
-    nock(link).get('/').reply(200, html);
-
-    await expect(downloadPage(link, '/wrong/dir')).rejects.toThrowErrorMatchingSnapshot();
-  });
-
   test('passed link to non-existent site', async () => {
-    nock(link).get('/').reply(404);
-
     const notValidLink = 'http://qwertyui12345.com/';
+
+    nock(notValidLink).get('/').reply(404);
 
     await expect(downloadPage(notValidLink, pathToTempDir)).rejects.toThrowErrorMatchingSnapshot();
   });
