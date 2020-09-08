@@ -33,11 +33,9 @@ export const makePathToFolder = (link, pathToFolder = '') => `${makePath(link, p
  */
 export const makePathToFile = (pathToFile, pathToFilesFolder) => {
   const { dir, base } = path.parse(pathToFile);
-
   if (dir === '/' || !dir.length) {
     return path.join(pathToFilesFolder, base);
   }
-
   const fileName = dir
     .replace(/\W+/g, '-')
     .concat(`-${base}`);

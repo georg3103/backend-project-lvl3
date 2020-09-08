@@ -1,4 +1,4 @@
-# backend-project-lvl3
+# Page loader
 
 <a href="https://github.com/georg3103/backend-project-lvl3/actions?query=workflow%3Abuild">
   <img src="https://github.com/georg3103/backend-project-lvl3/workflows/build/badge.svg">
@@ -11,3 +11,17 @@
 <a href="https://codeclimate.com/github/georg3103/backend-project-lvl3/test_coverage">
 	<img src="https://api.codeclimate.com/v1/badges/96e601e5617e001ebb82/test_coverage" />
 </a>
+
+## Description
+
+Utiluty for downloading web pages
+
+## Install
+
+<a href="https://asciinema.org/a/wmlifLeHqpoxGSKp0dER8OgoI" target="_blank"><img src="https://asciinema.org/a/wmlifLeHqpoxGSKp0dER8OgoI.svg" /></a>
+
+## Setup
+
+```sh
+$ make install
+```
