@@ -46,8 +46,8 @@ describe('pageLoader functionality', () => {
     await downloadPage(`${link}/tests/`, pathToTempDir);
 
     const changedHtml = await readFile(`${pathToTempDir}/test-com.html`);
-    const loadedStyle = await readFile(`${pathToResources}/style.css`);
-    const loadedScript = await readFile(`${pathToResources}/folder-script.txt`);
+    const loadedStyle = await readFile(`${pathToResources}/tests-style.css`);
+    const loadedScript = await readFile(`${pathToResources}/tests-folder-script.txt`);
 
     expect(changedHtml).toBe(expectedHtml);
     expect(loadedStyle).toBe(expectedStyle);

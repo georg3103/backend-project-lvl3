@@ -10,7 +10,6 @@ import {
   makePathToHtml,
   makePathToFile,
   makePathToFolder,
-  changePath,
 } from './utils';
 
 import 'axios-debug-log';
@@ -39,15 +38,11 @@ const changeHtml = (html, pathToFolder, parsedUrl) => {
       $(selector).each((_, el) => {
         const pathToResource = $(el).attr(attr);
         if (url.parse(pathToResource).host === null) {
-          const resPathname = path.normalize(path.join(parsedUrl.pathname, pathToResource));
-          const resourceLink = url.format({
-            protocol: parsedUrl.protocol,
-            hostname: parsedUrl.hostname,
-            pathname: resPathname,
-          });
+          const resPathname = path.join(parsedUrl.pathname, pathToResource);
+          const { href: resourceLink } = new URL(path.join(parsedUrl.href, pathToResource));
           const pathToFile = resourceLink.replace(parsedUrl.href, '');
           urls.push({ url: resourceLink, pathToFile });
-          const newPathToFile = changePath(pathToResource, pathToFolder);
+          const newPathToFile = makePathToFile(resPathname, pathToFolder);
           $(el).attr(attr, newPathToFile);
         }
       });
@@ -63,8 +58,8 @@ const changeHtml = (html, pathToFolder, parsedUrl) => {
 const downloadResource = (linkToResource, pathToFile, pathToFilesFolder) => axios
   .get(linkToResource, { responseType: 'arraybuffer' })
   .then(({ data: fileData }) => {
-    const pathTofile = makePathToFile(pathToFile, pathToFilesFolder);
-    log(pathTofile, 'creating a file');
+    const { pathname } = new URL(linkToResource);
+    const pathTofile = makePathToFile(pathname, pathToFilesFolder);
     return fsPromises.writeFile(pathTofile, fileData);
   });
 
