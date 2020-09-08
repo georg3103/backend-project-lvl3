@@ -20,6 +20,12 @@ Utiluty for downloading web pages
 
 <a href="https://asciinema.org/a/wmlifLeHqpoxGSKp0dER8OgoI" target="_blank"><img src="https://asciinema.org/a/wmlifLeHqpoxGSKp0dER8OgoI.svg" /></a>
 
+## Usage
+
+<a href="https://asciinema.org/a/2gZMDgSwMT7MuZ5aBJw0qpUrw" target="_blank"><img src="https://asciinema.org/a/2gZMDgSwMT7MuZ5aBJw0qpUrw.svg" /></a>
+
+<a href="https://asciinema.org/a/2gZMDgSwMT7MuZ5aBJw0qpUrw" target="_blank"><img src="https://asciinema.org/a/2gZMDgSwMT7MuZ5aBJw0qpUrw.svg" /></a>
+
 ## Setup
 
 ```sh
