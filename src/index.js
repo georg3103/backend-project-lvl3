@@ -1,6 +1,4 @@
 import { promises as fsPromises } from 'fs';
-import url from 'url';
-import path from 'path';
 import axios from 'axios';
 import cheerio from 'cheerio';
 import debug from 'debug';
@@ -22,84 +20,60 @@ const tagAttributesMapping = {
   script: 'src',
 };
 
-/**
- * @param {String} html previously loaded html
- * @param {String} pathToFolder path to folder containing loaded resources
- * @param {String} html previously loaded html
- * @returns {Object} return parsed urls and changed html ({ urls, html }) , url ({url, pathToFile})
- */
-const changeHtml = (html, pathToFolder, parsedUrl) => {
+const prepareData = (html, pathToFilesFolder, linkUrlObj) => { // rename
   const $ = cheerio.load(html);
-  const urls = [];
-  Object.keys(tagAttributesMapping)
-    .forEach((tag) => {
-      const attr = tagAttributesMapping[tag];
-      const selector = `${tag}[${attr}]`;
-      $(selector).each((_, el) => {
-        const pathToResource = $(el).attr(attr);
-        if (url.parse(pathToResource).host === null) {
-          const resPathname = path.join(parsedUrl.pathname, pathToResource);
-          const { href: resourceLink } = new URL(path.join(parsedUrl.href, pathToResource));
-          const pathToFile = resourceLink.replace(parsedUrl.href, '');
-          urls.push({ url: resourceLink, pathToFile });
-          const newPathToFile = makePathToFile(resPathname, pathToFolder);
-          $(el).attr(attr, newPathToFile);
-        }
-      });
+  const resources = [];
+  Object.entries(tagAttributesMapping)
+    .forEach(([tag, attr]) => {
+      $(`${tag}[${attr}]`)
+        .map((_, el) => ({
+          urlObj: new URL($(el).attr(attr), linkUrlObj.href),
+          el,
+        }))
+        .get()
+        .filter(({ urlObj }) => urlObj.host === linkUrlObj.host)
+        .forEach(({ urlObj, el }) => {
+          const newPathToFile = makePathToFile(urlObj.pathname, pathToFilesFolder);
+          resources.push({ urlObj, newPathToFile });
+          const relativePathToFile = makePathToFolder(linkUrlObj.href);
+          const changedPathToFile = makePathToFile(urlObj.pathname, relativePathToFile);
+          $(el).attr(attr, changedPathToFile);
+        });
     });
-  return { urls, html: $.html() };
+  return { resources, html: $.html() };
 };
 
-/**
- * @param {String} linkToResource link to resource
- * @param {String} linkToSite link to site
- * @param {String} pathToFilesFolder path to loaded files folder
- */
-const downloadResource = (linkToResource, pathToFile, pathToFilesFolder) => axios
-  .get(linkToResource, { responseType: 'arraybuffer' })
-  .then(({ data: fileData }) => {
-    const { pathname } = new URL(linkToResource);
-    const pathTofile = makePathToFile(pathname, pathToFilesFolder);
-    return fsPromises.writeFile(pathTofile, fileData);
-  });
+const downloadResource = (linkToResource, pathToFile) => axios
+  .get(linkToResource.href, { responseType: 'arraybuffer' })
+  .then(({ data }) => fsPromises.writeFile(pathToFile, data));
 
-/**
- * @param {Array} urls array of resource links
- * @param {String} pathToFilesFolder path to loaded files folder
- * @returns {Array} load tasks
- */
-const createLoadTasks = (urls, pathToFilesFolder) => new Listr(
-  urls.map(({ url: urlItem, pathToFile }) => ({
-    title: `load ${urlItem}`,
-    task: () => downloadResource(urlItem, pathToFile, pathToFilesFolder),
-  }), { concurrent: true, exitOnError: false }),
-);
+const createLoadTasks = (resources) => {
+  const tasks = resources.map(({ urlObj: urlObjItem, newPathToFile }) => ({
+    title: `loaded ${urlObjItem.href} to ${newPathToFile}`,
+    task: () => downloadResource(urlObjItem, newPathToFile),
+  }));
+  return new Listr(tasks, { concurrent: true, exitOnError: false });
+};
 
-/**
- * @param {String} link link to site
- * @param {String} output path to the folder where the downloaded files will be stored
- */
-export default (link, output) => {
-  const parsedUrl = new URL(link);
-  const pathToHtml = makePathToHtml(link, output);
-  const pathToFilesFolder = makePathToFolder(link, output);
+export default (link, pathToOutput) => {
+  const linkUrlObj = new URL(link);
+  const pathToHtml = makePathToHtml(link, pathToOutput);
+  const pathToFilesFolder = makePathToFolder(link, pathToOutput);
 
-  let newHtml;
-  let fileLoadTasks = [];
+  let data = {};
 
   return axios
     .get(link)
     .then(({ data: html }) => {
-      const pathToFolder = makePathToFolder(link);
-      const { urls, html: changedHtml } = changeHtml(html, pathToFolder, parsedUrl);
-      newHtml = changedHtml;
-      fileLoadTasks = createLoadTasks(urls, pathToFilesFolder);
+      const { resources, html: newHtml } = prepareData(html, pathToFilesFolder, linkUrlObj);
+      const fileLoadTasks = createLoadTasks(resources, pathToFilesFolder);
+      data = { newHtml, fileLoadTasks };
     })
     .then(() => fsPromises.access(pathToFilesFolder)
       .catch(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true })))
     .then(() => {
-      log(pathToHtml, 'index file is is loading');
-      return fsPromises.writeFile(pathToHtml, newHtml);
+      log(pathToHtml, 'index file is loading');
+      return fsPromises.writeFile(pathToHtml, data.newHtml);
     })
-    .then(() => fileLoadTasks.run());
+    .then(() => data.fileLoadTasks.run());
 };
