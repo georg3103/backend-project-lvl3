@@ -20,7 +20,7 @@ const tagAttributesMapping = {
   script: 'src',
 };
 
-const prepareData = (html, pathToFilesFolder, linkUrlObj) => { // rename
+const prepareData = (html, baseDirname, linkUrlObj) => { // rename
   const $ = cheerio.load(html);
   const resources = [];
   Object.entries(tagAttributesMapping)
@@ -33,7 +33,7 @@ const prepareData = (html, pathToFilesFolder, linkUrlObj) => { // rename
         .get()
         .filter(({ urlObj }) => urlObj.host === linkUrlObj.host)
         .forEach(({ urlObj, el }) => {
-          const newPathToFile = makePathToFile(urlObj.pathname, pathToFilesFolder);
+          const newPathToFile = makePathToFile(urlObj.pathname, baseDirname);
           resources.push({ urlObj, newPathToFile });
           const relativePathToFile = makePathToFolder(linkUrlObj.href);
           const changedPathToFile = makePathToFile(urlObj.pathname, relativePathToFile);
@@ -45,7 +45,7 @@ const prepareData = (html, pathToFilesFolder, linkUrlObj) => { // rename
 
 const downloadResource = (linkToResource, pathToFile) => axios
   .get(linkToResource.href, { responseType: 'arraybuffer' })
-  .then(({ data }) => fsPromises.writeFile(pathToFile, data));
+  .then((response) => fsPromises.writeFile(pathToFile, response.data));
 
 const createLoadTasks = (resources) => {
   const tasks = resources.map(({ urlObj: urlObjItem, newPathToFile }) => ({
@@ -58,19 +58,19 @@ const createLoadTasks = (resources) => {
 export default (link, pathToOutput) => {
   const linkUrlObj = new URL(link);
   const pathToHtml = makePathToHtml(link, pathToOutput);
-  const pathToFilesFolder = makePathToFolder(link, pathToOutput);
+  const baseDirname = makePathToFolder(link, pathToOutput);
 
   let data = {};
 
   return axios
     .get(link)
     .then(({ data: html }) => {
-      const { resources, html: newHtml } = prepareData(html, pathToFilesFolder, linkUrlObj);
-      const fileLoadTasks = createLoadTasks(resources, pathToFilesFolder);
+      const { resources, html: newHtml } = prepareData(html, baseDirname, linkUrlObj);
+      const fileLoadTasks = createLoadTasks(resources, baseDirname);
       data = { newHtml, fileLoadTasks };
     })
-    .then(() => fsPromises.access(pathToFilesFolder)
-      .catch(() => fsPromises.mkdir(pathToFilesFolder, { recursive: true })))
+    .then(() => fsPromises.access(baseDirname)
+      .catch(() => fsPromises.mkdir(baseDirname, { recursive: true })))
     .then(() => {
       log(pathToHtml, 'index file is loading');
       return fsPromises.writeFile(pathToHtml, data.newHtml);

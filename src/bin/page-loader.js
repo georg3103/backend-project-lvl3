@@ -12,7 +12,7 @@ commander
   .action((url, cmd) => {
     downloadPage(url, cmd.output)
       .then(() => {
-        console.log(`page is loaded to ${cmd.output}`);
+        console.log(`Page has been successfully downloaded to ${cmd.output}`);
       })
       .catch((err) => {
         console.error('Download completed with error:', err);
