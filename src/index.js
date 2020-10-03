@@ -3,11 +3,12 @@ import axios from 'axios';
 import cheerio from 'cheerio';
 import debug from 'debug';
 import Listr from 'listr';
+import path from 'path';
 
 import {
   makePathToHtml,
-  makePathToFile,
-  makePathToFolder,
+  makePathToResource,
+  makePathToResources,
 } from './utils';
 
 import 'axios-debug-log';
@@ -20,7 +21,7 @@ const tagAttributesMapping = {
   script: 'src',
 };
 
-const prepareData = (html, baseDirname, linkUrlObj) => { // rename
+const prepareData = (html, baseDirname, linkUrlObj) => {
   const $ = cheerio.load(html);
   const resources = [];
   Object.entries(tagAttributesMapping)
@@ -33,10 +34,12 @@ const prepareData = (html, baseDirname, linkUrlObj) => { // rename
         .get()
         .filter(({ urlObj }) => urlObj.host === linkUrlObj.host)
         .forEach(({ urlObj, el }) => {
-          const newPathToFile = makePathToFile(urlObj.pathname, baseDirname);
+          const newPathToFile = path.join(baseDirname, makePathToResource(urlObj.href));
           resources.push({ urlObj, newPathToFile });
-          const relativePathToFile = makePathToFolder(linkUrlObj.href);
-          const changedPathToFile = makePathToFile(urlObj.pathname, relativePathToFile);
+          const changedPathToFile = path.join(
+            makePathToResources(linkUrlObj.href),
+            makePathToResource(urlObj.href),
+          );
           $(el).attr(attr, changedPathToFile);
         });
     });
@@ -57,8 +60,8 @@ const createLoadTasks = (resources) => {
 
 export default (link, pathToOutput) => {
   const linkUrlObj = new URL(link);
-  const pathToHtml = makePathToHtml(link, pathToOutput);
-  const baseDirname = makePathToFolder(link, pathToOutput);
+  const pathToHtml = path.join(pathToOutput, makePathToHtml(link));
+  const baseDirname = path.join(pathToOutput, makePathToResources(link));
 
   let data = {};
 
@@ -66,14 +69,16 @@ export default (link, pathToOutput) => {
     .get(link)
     .then(({ data: html }) => {
       const { resources, html: newHtml } = prepareData(html, baseDirname, linkUrlObj);
-      const fileLoadTasks = createLoadTasks(resources, baseDirname);
-      data = { newHtml, fileLoadTasks };
+      data = { newHtml, resources };
+      return fsPromises.access(baseDirname)
+        .catch(() => fsPromises.mkdir(baseDirname, { recursive: true }));
     })
-    .then(() => fsPromises.access(baseDirname)
-      .catch(() => fsPromises.mkdir(baseDirname, { recursive: true })))
     .then(() => {
       log(pathToHtml, 'index file is loading');
       return fsPromises.writeFile(pathToHtml, data.newHtml);
     })
-    .then(() => data.fileLoadTasks.run());
+    .then(() => {
+      const fileLoadTasks = createLoadTasks(data.resources, baseDirname);
+      return fileLoadTasks.run();
+    });
 };
